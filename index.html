@@ -112,6 +112,10 @@ table.mx input{width:100%;height:40px;border-radius:8px;border:1px solid var(--l
 .wlist{display:grid;gap:6px;margin-top:8px}
 .wrow{display:grid;grid-template-columns:1fr 52px;align-items:center;gap:8px;font-size:17px}
 .tick.small{height:40px}
+.planbox{margin-top:12px;display:grid;gap:8px;border-top:1px solid var(--line);padding-top:12px}
+.planrow{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.xform{display:grid;gap:8px;margin-top:10px}
+.btn:disabled{opacity:.55;cursor:default}
 .empty{text-align:center;padding:30px 10px;color:var(--muted)}
 :focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 @media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
@@ -174,7 +178,7 @@ function defaults(){
     maxes:{squat:{est:135,tested:null},bench:{est:115,tested:null},deadlift:{est:125,tested:null},front:{est:110,tested:null},incline:{est:92.5,tested:null},ohp:{est:67.5,tested:null}},
     acc:Object.fromEntries(ACC.map(a=>[a.k,a.start])),
     loss:[.7,.7,.7,.7,.8,.8,.8,0,.3,.7,.7,.7],
-    adj:[],swaps:{},logs:{},lastBackup:null};
+    adj:[],swaps:{},sleep:{},logs:{},lastBackup:null};
 }
 function load(){
   let s=defaults();
@@ -253,13 +257,20 @@ function accItems(sess,wk){
   });
 }
 function homeSets(wk,i,base){if(wk===8||wk===9)return 2;if(wk>=10&&i<2)return 4;return base;}
-function sessionFor(date){
-  const d=diffDays(S.start,date);
-  if(d<0||d>=84)return null;
-  const wk=Math.floor(d/7)+1,realDow=d%7;
-  const dow=(S.swaps[date]!=null)?S.swaps[date]:realDow;
-  const W=WEEKS[wk-1];
-  let items=[];
+const SESS=[0,3,5,2,6,1];
+const SHORT=["Gym A","Zone 2 row","Home upper","Gym B","Rest","Home lower","Row intervals"];
+const FATIGUE={1:1,2:2,5:3,6:4,3:5,0:5};
+const GEN_GYM="5 min easy row or bike, then 10 leg swings each side, 10 bodyweight squats, 10 hip hinges, 10 band pull-aparts or arm circles. About 8 minutes.";
+function weekOf(date){const d=diffDays(S.start,date);return (d<0||d>=84)?null:Math.floor(d/7)+1;}
+function weekDates(wk){return Array.from({length:7},(_,i)=>addDays(S.start,(wk-1)*7+i));}
+function sessionsOn(date){
+  const v=S.swaps[date];
+  if(Array.isArray(v))return v.slice();
+  if(typeof v==="number")return v===4?[]:[v];
+  const d=diffDays(S.start,date);const r=((d%7)+7)%7;return r===4?[]:[r];
+}
+function buildDow(dow,wk){
+  const W=WEEKS[wk-1];let items=[];
   if(dow===0){items=[...liftItems("squat",wk,W.sb,"Back-off"),...liftItems("bench",wk,W.sb,"Back-off"),...accItems("A",wk)];}
   else if(dow===3){
     items=[...liftItems("deadlift",wk,W.dl,"Back-off")];
@@ -277,15 +288,114 @@ function sessionFor(date){
     items.push({id:"fin",kind:"fin",name:"Atalanta finisher",plan:`${rounds} rounds: 400 m row, 20 push-ups, 20 sit-ups`,rounds});
   }
   else if(dow===6){items=[{id:"row-int",kind:"row",name:"Row intervals",plan:`${IV[wk-1]} · 5 min warm-up and cool-down · hard efforts 1:55–2:05/500 m`}];}
-  const gym=(dow===0||dow===3);
-  if(gym)items.unshift({id:"gen",kind:"gen",name:"General warm-up",plan:"5 min easy row or bike, then 10 leg swings each side, 10 bodyweight squats, 10 hip hinges, 10 band pull-aparts or arm circles. About 8 minutes."});
-  else if(dow===2||dow===5)items.unshift({id:"gen",kind:"gen",name:"General warm-up",plan:dow===2?"3–5 min easy row, then 10 arm circles each way, 10 push-ups on knees or against a bench, 10 light dumbbell rows each side.":"3–5 min easy row, then 10 leg swings each side, 10 bodyweight squats, 10 glute bridges, 5 slow split squats each leg."});
+  items.forEach(it=>it.dow=dow);
+  return items;
+}
+function lowSleep(date){return !!(S.sleep&&S.sleep[date]&&S.sleep[date].poor);}
+function applyLowSleep(items){
+  const out=[];
+  items.forEach(it=>{
+    if(it.kind==="lift"&&it.label==="Heavy single")return;
+    if(it.kind==="lift"&&it.label!=="1RM test"){
+      const c=Object.assign({},it);c.sets=Math.max(2,it.sets-1);c.weight=rnd(it.weight*0.9);c.progress=false;
+      c.note="Low-sleep version: 10% lighter, one set fewer, no heavy single. Stop the set if bar speed drops.";out.push(c);return;
+    }
+    if(it.kind==="warm"){const c=Object.assign({},it);c.note="Then go straight to the lighter working sets.";out.push(c);return;}
+    out.push(it);
+  });
+  return out;
+}
+function sessionFor(date){
+  const wk=weekOf(date);if(wk==null)return null;
+  const d=diffDays(S.start,date),realDow=d%7;
+  const W=WEEKS[wk-1];
+  const dows=sessionsOn(date).sort((a,b)=>SESS.indexOf(a)-SESS.indexOf(b));
+  let items=[];
+  dows.forEach(dw=>{items.push(...buildDow(dw,wk));});
+  const gym=dows.includes(0)||dows.includes(3);
+  if(gym){
+    if(lowSleep(date))items=applyLowSleep(items);
+    items.unshift({id:"gen",kind:"gen",name:"General warm-up",plan:GEN_GYM});
+  }else if(dows.includes(2)||dows.includes(5)){
+    items.unshift({id:"gen",kind:"gen",name:"General warm-up",plan:dows.includes(5)?"3–5 min easy row, then 10 leg swings each side, 10 bodyweight squats, 10 glute bridges, 5 slow split squats each leg.":"3–5 min easy row, then 10 arm circles each way, 10 push-ups on knees or against a bench, 10 light dumbbell rows each side."});
+  }
   let kcal=gym?W.gk:W.ok;
   if(HOLIDAYS.includes(date))kcal=S.holidayK;
   let warn="";
-  if(date==="2026-12-24"&&dow===3)warn="Christmas Eve: do this session on 23 Dec or skip it. Use “Swap session” on 23 Dec.";
-  if(wk===9&&dow===3&&date==="2026-12-31")warn="If the gym is closed on 31 Dec, test the deadlift on Sat 2 Jan using “Swap session”.";
-  return {wk,dow,realDow,W,items,title:DAYNAMES[dow],kcal,holiday:HOLIDAYS.includes(date),warn,swapped:S.swaps[date]!=null};
+  if(date==="2026-12-24"&&dows.includes(3))warn="Christmas Eve: move Gym B to 23 Dec, or let the app reschedule it.";
+  if(date==="2026-12-31"&&dows.includes(3))warn="If the gym is closed on 31 Dec, move the deadlift test to Sat 2 Jan.";
+  const title=dows.length?dows.map(x=>SHORT[x]).join(" + "):"Rest day";
+  const swapped=S.swaps[date]!=null&&JSON.stringify(dows.slice().sort())!==JSON.stringify((realDow===4?[]:[realDow]));
+  return {wk,dow:dows[0],dows,realDow,W,items,title,kcal,holiday:HOLIDAYS.includes(date),warn,swapped};
+}
+/* status of one session type on one date */
+function dowStatusOn(date,dow,wk){
+  const main=buildDow(dow,wk).filter(it=>it.kind!=="warm"&&it.kind!=="gen"&&!(lowSleep(date)&&it.label==="Heavy single"));
+  const st=main.map(it=>itemStatus(date,it));
+  if(st.length&&st.every(x=>x===2))return "done";
+  if(st.some(x=>x>0))return "partial";
+  return "none";
+}
+/* week overview: where each of the 6 sessions stands */
+function weekInfo(wk){
+  const dates=weekDates(wk);
+  return SESS.map(dw=>{
+    let doneOn=null,partialOn=null,future=null,past=null;
+    dates.forEach(d=>{
+      if(!sessionsOn(d).includes(dw))return;
+      const st=dowStatusOn(d,dw,wk);
+      if(st==="done")doneOn=doneOn||d;
+      else if(st==="partial")partialOn=partialOn||d;
+      else if(diffDays(d,TODAY)<=0)future=future||d;
+      else past=past||d;
+    });
+    let state=doneOn?"done":partialOn?"partial":future?"scheduled":past?"missed":"unscheduled";
+    return {dow:dw,name:SHORT[dw],state,date:doneOn||partialOn||future||past};
+  });
+}
+function daysLeft(wk){return weekDates(wk).filter(d=>diffDays(TODAY,d)>=0);}
+function setDay(date,arr){S.swaps[date]=arr.slice();}
+function removeEverywhere(wk,dow,except){
+  weekDates(wk).forEach(d=>{if(d===except)return;const a=sessionsOn(d);if(a.includes(dow)&&dowStatusOn(d,dow,wk)==="none")setDay(d,a.filter(x=>x!==dow));});
+}
+function hasProgress(date){const s=sessionFor(date);return !!s&&s.items.some(it=>it.kind!=="gen"&&it.kind!=="warm"&&itemStatus(date,it)>0);}
+/* Reschedule every open session over the remaining days of the week */
+function reschedule(wk,fromDate,keepToday){
+  const dates=weekDates(wk).filter(d=>diffDays(fromDate,d)>=0);
+  if(!dates.length)return {placed:0,left:[]};
+  const info=weekInfo(wk);
+  const fixed=new Set();
+  if(keepToday&&dates[0]===fromDate)fixed.add(fromDate);
+  dates.forEach(d=>{if(hasProgress(d))fixed.add(d);});
+  const free=dates.filter(d=>!fixed.has(d));
+  const open=info.filter(x=>x.state!=="done"&&x.state!=="partial"&&!(x.state==="scheduled"&&!free.includes(x.date))).map(x=>x.dow);
+  const slots={};free.forEach(d=>slots[d]=[]);
+  const allDates=weekDates(wk);
+  const assigned=d=>slots[d]!=null?slots[d]:sessionsOn(d);
+  const isGym=d=>{if(!d)return false;const a=assigned(d);return a.includes(0)||a.includes(3);};
+  const gymNear=d=>isGym(addDays(d,-1))||isGym(addDays(d,1));
+  const order=open.slice().sort((a,b)=>[0,3,5,2,6,1].indexOf(a)-[0,3,5,2,6,1].indexOf(b));
+  const left=[];
+  order.forEach(dw=>{
+    const home=allDates[dw];
+    const empty=free.filter(d=>slots[d].length===0);
+    const ok=d=>{
+      if(dw===0||dw===3)return !gymNear(d);
+      if(dw===5)return !gymNear(d)||true;
+      return true;
+    };
+    let pick=null;
+    if(slots[home]&&slots[home].length===0&&ok(home))pick=home;
+    if(!pick)pick=empty.find(ok)||null;
+    if(!pick&&(dw===0||dw===3))pick=empty[0]||null;
+    if(!pick){
+      if(dw===1||dw===6){const c=free.filter(d=>!slots[d].includes(1)&&!slots[d].includes(6)&&slots[d].length<2);pick=c.find(d=>slots[d].includes(2)||slots[d].includes(5))||c.find(d=>!slots[d].includes(0)&&!slots[d].includes(3))||c[0]||null;}
+      else if(dw===2||dw===5)pick=free.find(d=>slots[d].length===1&&(slots[d][0]===1||slots[d][0]===6))||null;
+    }
+    if(pick)slots[pick].push(dw);else left.push(dw);
+  });
+  free.forEach(d=>setDay(d,slots[d]));
+  return {placed:order.length-left.length,left};
 }
 function targetFor(wk){let t=Number(S.startWeight);for(let i=0;i<wk;i++)t-=Number(S.loss[i]||0);return Math.round(t*10)/10;}
 
@@ -352,14 +462,97 @@ function renderToday(){
     h+=bodyCard(null);
     $("#view").innerHTML=`<div class="stack">${h}</div>`;return;
   }
-  h+=`<div class="card"><div class="cardhead"><div><div class="label">${DOW[s.realDow]}${s.swapped?" · swapped":""}</div><h2>${esc(s.title)}</h2></div>${statusChip(dayStatus(viewDate))}</div>
+  h+=`<div class="card"><div class="cardhead"><div><div class="label">${DOW[s.realDow]}${s.swapped?" · changed":""}${lowSleep(viewDate)?" · low sleep":""}</div><h2>${esc(s.title)}</h2></div>${statusChip(dayStatus(viewDate))}</div>
     ${s.warn?`<div class="banner warn">${esc(s.warn)}</div>`:""}
-    <div class="row3"><label class="label" for="swap" style="align-self:center">Swap session</label>
-    <select id="swap" data-act="swap"><option value="">As planned (${esc(DAYNAMES[s.realDow])})</option>${DAYNAMES.map((n,i)=>`<option value="${i}" ${s.swapped&&s.dow===i?"selected":""}>${esc(n)}</option>`).join("")}</select></div></div>`;
+    <div class="btns"><button type="button" class="btn ${planOpen?"primary":""}" data-act="planopen">Change today’s plan</button>
+    <button type="button" class="btn ${lowSleep(viewDate)?"primary":""}" data-act="sleep">${lowSleep(viewDate)?"Slept badly ✓":"Slept badly?"}</button></div>
+    ${planOpen?planPanel(viewDate,s):""}</div>`;
+  h+=weekBanner(viewDate,s);
+  if(lowSleep(viewDate))h+=sleepCard(viewDate,s);
   if(!s.items.length){h+='<div class="card"><h3>Rest</h3><div class="note">Recovery is part of the plan. Aim for 7–9 hours of sleep and hit your protein target.</div></div>';}
   s.items.forEach(it=>{h+=itemCard(viewDate,s,it);});
+  h+=extraCard(viewDate);
   h+=bodyCard(s);
   $("#view").innerHTML=`<div class="stack">${h}</div>`;
+}
+let planOpen=false,extraOpen=false;
+const STATE_TXT={done:"Done",partial:"Started",scheduled:"Planned",missed:"Missed",unscheduled:"No day yet"};
+function stateChip(x){
+  const cls={done:"good",partial:"warn",scheduled:"",missed:"warn",unscheduled:"warn"}[x.state];
+  const when=x.date&&x.state!=="unscheduled"?" "+DOW[(parse(x.date).getUTCDay()+6)%7]:"";
+  return `<span class="chip ${cls}">${STATE_TXT[x.state]}${when}</span>`;
+}
+function planPanel(date,s){
+  const info=weekInfo(s.wk);const today=sessionsOn(date);
+  const rows=info.map(x=>{
+    const on=today.includes(x.dow);
+    let btn;
+    if(on)btn=`<button type="button" class="btn small primary" data-act="unassign" data-dow="${x.dow}">On today ✓</button>`;
+    else if(x.state==="done"||x.state==="partial")btn=`<button type="button" class="btn small" disabled>${x.state==="done"?"Done":"Started"}</button>`;
+    else btn=`<button type="button" class="btn small" data-act="assign" data-dow="${x.dow}">Do today</button>`;
+    return `<div class="planrow"><span><b>${esc(x.name)}</b> ${stateChip(x)}</span>${btn}</div>`;
+  }).join("");
+  return `<div class="planbox"><div class="note">Pick any of this week’s sessions for today. Moving one here takes it off its other day. You can do two light sessions on one day, such as a row after home training.</div>${rows}
+    <div class="btns"><button type="button" class="btn small" data-act="restday">Make today a rest day</button>
+    <button type="button" class="btn small" data-act="resched">Reschedule rest of week</button>
+    <button type="button" class="btn small" data-act="resetweek">Reset week to original plan</button></div></div>`;
+}
+function weekBanner(date,s){
+  if(diffDays(date,TODAY)!==0)return "";
+  const info=weekInfo(s.wk);
+  const open=info.filter(x=>x.state!=="done");
+  const loose=info.filter(x=>x.state==="missed"||x.state==="unscheduled");
+  const left=daysLeft(s.wk).length;
+  let h="";
+  if(loose.length){
+    h+=`<div class="banner warn">${loose.map(x=>x.name).join(", ")} ${loose.length>1?"have":"has"} no day left this week. <button type="button" class="btn small primary" data-act="resched">Reschedule rest of week</button></div>`;
+  }
+  const heavy=open.filter(x=>x.dow!==1&&x.dow!==6).length;
+  if(open.length>left&&heavy<=left)h+=`<div class="banner info">${open.length} sessions left in ${left} day${left===1?"":"s"}. Rowing sessions can be added after a home session to fit them in.</div>`;
+  else if(heavy>left)h+=`<div class="banner warn">${open.length} sessions left in ${left} day${left===1?"":"s"}. Prioritise Gym A and Gym B; skip the rest without guilt.</div>`;
+  return h;
+}
+function recommend(date){
+  const wk=weekOf(date);const info=weekInfo(wk);
+  const open=info.filter(x=>x.state!=="done"&&x.state!=="partial");
+  const after=weekDates(wk).filter(d=>diffDays(date,d)>0).length;
+  const today=sessionsOn(date);
+  if(!open.length)return {dows:[],title:"Rest",why:"All of this week’s sessions are done. Rest, or take an easy 20-minute walk or row."};
+  const sorted=open.slice().sort((a,b)=>FATIGUE[a.dow]-FATIGUE[b.dow]);
+  const best=sorted[0];
+  const othersFit=open.filter(x=>x.dow!==best.dow).length<=after;
+  if(best.dow===1)return {dows:[1],title:"Zone 2 row",why:"Poor sleep lowers performance in every kind of training, but easy steady cardio depends least on peak strength and sharp technique, so a small dip matters little. It still builds fitness and burns calories."+(othersFit?"":" Your remaining sessions will need some doubling up.")};
+  if(open.length<=after)return {dows:[],title:"Rest today",why:`Your ${open.length} remaining session${open.length===1?"":"s"} still fit in the ${after} day${after===1?"":"s"} left, so recover today and train tomorrow.`};
+  const lab=best.dow===0||best.dow===3?" (lighter version)":"";
+  return {dows:[best.dow],title:best.name+lab,why:best.dow===0||best.dow===3?"Only harder sessions are left this week. After a poor night the same weights feel heavier and strength dips a little, so the app takes 10% off the working weights, drops one set and skips the heavy single. That is a coaching rule of thumb, not a tested protocol.":"It is the least demanding session left this week, so it fits a low-energy day best."};
+}
+function sleepCard(date,s){
+  const r=recommend(date);
+  const same=JSON.stringify(r.dows)===JSON.stringify(sessionsOn(date));
+  return `<div class="card"><div class="label">Low sleep</div><h3>Best choice today: ${esc(r.title)}</h3><div class="note" style="color:var(--ink)">${esc(r.why)}</div>
+    ${same?'<div class="banner good">Today’s plan already matches this.</div>':`<div class="btns"><button type="button" class="btn primary" data-act="applyrec">${r.dows.length?"Switch today to this":"Rest today"}</button></div>`}
+    ${(sessionsOn(date).includes(0)||sessionsOn(date).includes(3))?'<div class="note">If you keep today’s gym session, the lighter version is already applied below.</div>':""}
+    <div class="note"><b>Tip:</b> if you can, train earlier in the day. Research finds morning sessions are far less affected by a poor night than afternoon or evening ones.</div>
+    <div class="note">One bad night costs only a little performance, but several in a row add up. Short sleep while dieting also shifts weight loss from fat towards muscle.</div></div>`;
+}
+const EXTRA_TYPES=["Strength","Cardio","Sport","Mobility","Other"];
+function extraCard(date){
+  const L=dayLog(date,false);const list=(L&&L.extra)||[];
+  let h=`<div class="card"><div class="cardhead"><div><div class="label">Extra</div><h3>Other activity</h3></div>
+    <button type="button" class="btn small ${extraOpen?"":"primary"}" data-act="extraopen">${extraOpen?"Close":"Add"}</button></div>`;
+  if(list.length)h+=`<div class="wlist">${list.map((x,i)=>`<div class="wrow"><span><b>${esc(x.name)}</b> <span class="chip">${esc(x.type)}</span><br><span class="meta num">${[x.min?x.min+" min":"",x.sets&&x.reps?`${x.sets} × ${x.reps}${x.kg?" @ "+x.kg+" kg":""}`:"",x.km?x.km+" km":"",x.rpe?"RPE "+x.rpe:"",x.note].filter(Boolean).map(esc).join(" · ")}</span></span>
+    <button type="button" class="btn small" data-act="delextra" data-i="${i}" aria-label="Delete ${esc(x.name)}">✕</button></div>`).join("")}</div>`;
+  else if(!extraOpen)h+='<div class="note">Log anything outside the plan: a walk, football, a hike, a class or extra sets.</div>';
+  if(extraOpen)h+=`<div class="xform">
+    <div><div class="label">What did you do?</div><input class="txt" id="x-name" placeholder="e.g. 5-a-side football"></div>
+    <div class="row2"><div><div class="label">Type</div><select id="x-type">${EXTRA_TYPES.map(t=>`<option>${t}</option>`).join("")}</select></div>
+      <div><div class="label">Minutes</div><input class="txt" id="x-min" inputmode="numeric"></div></div>
+    <div class="row2"><div><div class="label">Sets</div><input class="txt" id="x-sets" inputmode="numeric"></div><div><div class="label">Reps</div><input class="txt" id="x-reps" inputmode="numeric"></div></div>
+    <div class="row2"><div><div class="label">Weight (kg)</div><input class="txt" id="x-kg" inputmode="decimal"></div><div><div class="label">Distance (km)</div><input class="txt" id="x-km" inputmode="decimal"></div></div>
+    <div class="row2"><div><div class="label">Effort (RPE 1–10)</div><input class="txt" id="x-rpe" inputmode="decimal"></div><div><div class="label">Note</div><input class="txt" id="x-note"></div></div>
+    <div class="note" id="x-msg" role="status"></div>
+    <div class="btns"><button type="button" class="btn primary" data-act="saveextra">Save activity</button></div></div>`;
+  return h+"</div>";
 }
 function itemCard(date,s,it){
   const st=itemStatus(date,it);
@@ -438,7 +631,12 @@ function renderWeek(){
   $("#top").innerHTML=`<div class="inner"><div class="daterow"><button class="iconbtn" type="button" data-act="wk" data-n="-1" aria-label="Previous week">‹</button>
     <h1>Week ${weekView}</h1><button class="iconbtn" type="button" data-act="wk" data-n="1" aria-label="Next week">›</button></div>
     <div class="sub"><span class="chip accent">${esc(W.ph)}</span><span class="chip">${fmt(addDays(S.start,(weekView-1)*7))} – ${fmt(addDays(S.start,(weekView-1)*7+6))}</span></div></div>`;
-  let h='<div class="daylist">';
+  const info=weekInfo(weekView);const doneN=info.filter(x=>x.state==="done").length;
+  const future=weekDates(weekView)[6]&&diffDays(TODAY,weekDates(weekView)[6])>=0;
+  let h=`<div class="card"><div class="cardhead"><div><div class="label">This week’s sessions</div><h3>${doneN} of ${info.length} done</h3></div></div>
+    <div class="wlist">${info.map(x=>`<div class="planrow"><span>${esc(x.name)}</span>${stateChip(x)}</div>`).join("")}</div>
+    ${future?`<div class="btns"><button type="button" class="btn small" data-act="resched" data-wk="${weekView}">Reschedule rest of week</button></div><div class="note">Moves open sessions onto the days you have left, keeping gym days apart where possible.</div>`:""}</div>`;
+  h+='<div class="daylist" style="margin-top:12px">';
   for(let i=0;i<7;i++){
     const d=addDays(S.start,(weekView-1)*7+i);const s=sessionFor(d);
     h+=`<button type="button" class="dayitem ${d===TODAY?"today":""}" data-act="open" data-d="${d}">
@@ -448,7 +646,7 @@ function renderWeek(){
   }
   h+="</div>";
   const lifts=[["squat","Squat"],["bench","Bench"],["deadlift","Deadlift"]];
-  const sA=sessionFor(addDays(S.start,(weekView-1)*7)),sB=sessionFor(addDays(S.start,(weekView-1)*7+3));
+  const sA={items:buildDow(0,weekView)},sB={items:buildDow(3,weekView)};
   const find=(sess,id)=>sess&&sess.items.find(x=>x.id===id);
   h+=`<div class="card" style="margin-top:12px"><div class="label">Main lifts this week</div><table class="mx"><thead><tr><th>Lift</th><th>Single</th><th>Back-off</th></tr></thead><tbody>`;
   lifts.forEach(([k,n])=>{
@@ -559,6 +757,7 @@ function csv(){
       if(v.sets)v.sets.forEach((x,i)=>{if(x.w!=null||x.r!=null||x.d)rows.push([d,wk,title,names[id]||id,i+1,x.w??"",x.r??"",x.d?"yes":"no",v.rpe||"",v.note||"","","","","","","",""]);});
       else if(v.f)rows.push([d,wk,title,names[id]||id,"","","",v.d?"yes":"no","","",v.f.dist??"",v.f.time??"",v.f.watts??"",v.f.hr??"","","",""]);
     });
+    (L.extra||[]).forEach(x=>rows.push([d,wk,title,"Other: "+x.name+" ("+x.type+")",x.sets||"",x.kg||"",x.reps||"","yes",x.rpe||"",[x.min?x.min+" min":"",x.note].filter(Boolean).join(" · "),x.km?Number(x.km)*1000:"","","","","","",""]));
     if(L.body&&(L.body.w||L.body.waist||L.body.kcal))rows.push([d,wk,title,"Body","","","","","","","","","","",L.body.w??"",L.body.waist??"",L.body.kcal??""]);
   });
   return rows.map(r=>r.map(c=>{c=String(c);return /[",\n]/.test(c)?'"'+c.replace(/"/g,'""')+'"':c;}).join(",")).join("\n");
@@ -568,6 +767,7 @@ async function copyText(t,msg){
   try{await navigator.clipboard.writeText(t);setMsg(msg+" copied to the clipboard.");return true;}
   catch(e){if(ta){ta.focus();ta.select();}setMsg("Copying was blocked here. The text is selected in the box below: copy it by hand.");return false;}
 }
+function alertBanner(t){const v=$("#view");if(!v)return;const d=document.createElement("div");d.className="banner warn";d.setAttribute("role","status");d.textContent=t;v.prepend(d);}
 function setMsg(t){const m=$("#bkmsg");if(m)m.textContent=t;}
 function restore(text){
   try{const p=JSON.parse(text);if(!p||typeof p!=="object"||!p.logs)throw 0;
@@ -613,6 +813,24 @@ document.addEventListener("click",async e=>{
   }
   else if(a==="copycsv"){await copyText(csv(),"CSV");}
   else if(a==="restore"){restore($("#bktext").value.trim());}
+  else if(a==="planopen"){planOpen=!planOpen;render();}
+  else if(a==="sleep"){S.sleep=S.sleep||{};if(lowSleep(viewDate))delete S.sleep[viewDate];else S.sleep[viewDate]={poor:true};save();render();}
+  else if(a==="assign"){const wk=weekOf(viewDate),dw=Number(b.dataset.dow);removeEverywhere(wk,dw,viewDate);const cur=sessionsOn(viewDate);if(!cur.includes(dw))cur.push(dw);setDay(viewDate,cur);save();render();}
+  else if(a==="unassign"){const dw=Number(b.dataset.dow);setDay(viewDate,sessionsOn(viewDate).filter(x=>x!==dw));save();render();}
+  else if(a==="restday"){const wk=weekOf(viewDate);setDay(viewDate,[]);reschedule(wk,addDays(viewDate,1),false);save();render();}
+  else if(a==="resched"){const wk=b.dataset.wk?Number(b.dataset.wk):(weekOf(viewDate)||weekView);const st=weekDates(wk)[0];const from=diffDays(TODAY,st)>0?st:TODAY;const r=reschedule(wk,from,true);save();render();
+    if(r.left.length){setTimeout(()=>alertBanner(`Couldn’t fit ${r.left.map(x=>SHORT[x]).join(", ")} this week. Skip ${r.left.length>1?"them":"it"}, or add ${r.left.length>1?"them":"it"} to a day under “Change today’s plan”.`),50);}}
+  else if(a==="resetweek"){const wk=weekOf(viewDate);weekDates(wk).forEach(d=>delete S.swaps[d]);save();render();}
+  else if(a==="applyrec"){const wk=weekOf(viewDate);const r=recommend(viewDate);r.dows.forEach(dw=>removeEverywhere(wk,dw,viewDate));setDay(viewDate,r.dows);reschedule(wk,addDays(viewDate,1),false);save();render();}
+  else if(a==="extraopen"){extraOpen=!extraOpen;render();if(extraOpen){const n=$("#x-name");if(n)n.focus();}}
+  else if(a==="saveextra"){
+    const g=id=>{const el=$("#"+id);return el?el.value.trim():"";};
+    const name=g("x-name");if(!name){$("#x-msg").textContent="Give the activity a name first.";return;}
+    const L=dayLog(viewDate,true);L.extra=L.extra||[];
+    L.extra.push({name,type:g("x-type"),min:g("x-min"),sets:g("x-sets"),reps:g("x-reps"),kg:g("x-kg"),km:g("x-km"),rpe:g("x-rpe"),note:g("x-note")});
+    extraOpen=false;save();render();
+  }
+  else if(a==="delextra"){const L=dayLog(viewDate,false);if(L&&L.extra){L.extra.splice(Number(b.dataset.i),1);save();render();}}
   else if(a==="reset"){if(!resetArmed){resetArmed=true;render();setTimeout(()=>{resetArmed=false;if(route()==="setup")render();},5000);}else{resetArmed=false;S=defaults();save();render();}}
 });
 document.addEventListener("input",e=>{
