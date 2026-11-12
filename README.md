@@ -1,7 +1,7 @@
 # C1 Lernkarten Deutsch
 
 Lernkarten für Deutsch C1 als Web-App: Wortschatz, Nomen-Verb-Verbindungen, Passiv und Präpositionen.
-312 Karten, jede in drei Übungsarten: Schreiben, Satz ordnen, Auswählen.
+408 Karten, jede in drei Übungsarten: Schreiben, Satz ordnen, Auswählen.
 
 Die App besteht nur aus statischen Dateien. Sie braucht keinen Server und keinen Build-Schritt.
 
@@ -31,7 +31,20 @@ git push -u origin main
 - **iPhone / Safari:** Seite öffnen, **Teilen → Zum Home-Bildschirm**.
 - **Computer / Chrome oder Edge:** Symbol **Installieren** in der Adressleiste.
 
-Nach dem ersten Besuch funktioniert die App auch ohne Internet. Der Fortschritt wird im Browser des jeweiligen Geräts gespeichert und nicht zwischen Geräten übertragen.
+Nach dem ersten Besuch funktioniert die App auch ohne Internet.
+
+## Antwortverlauf
+
+Die App speichert jede Antwort im Browser des Geräts: Anzahl der Versuche, richtig oder falsch, die letzte falsche Antwort und das Datum.
+
+- **Übersicht:** Der Bereich „Übersicht“ zeigt den Stand pro Kartensatz und Übungsart und listet die offenen Fehler.
+- **Fehler wiederholen:** Unter „Karten“ lässt sich die Auswahl auf Fehler, ungelöste oder länger nicht geübte Karten einschränken.
+- **Sichern:** In der Übersicht „Verlauf als Datei sichern“ wählen. Die Datei heißt zum Beispiel `c1-verlauf-2026-11-13.json`.
+- **Einlesen:** Auf einem anderen Gerät oder nach gelöschten Browserdaten die Datei in der Übersicht einlesen. Dabei wird zusammengeführt, nichts Neueres wird überschrieben.
+
+Der Verlauf hängt an der Adresse der App. Wenn du neue Dateien ins selbe Repository hochlädst, bleibt er erhalten. Er geht verloren, wenn du Browserdaten löschst, den Browser wechselst oder das Repository umbenennst; sichere ihn vorher als Datei.
+
+Jede Karte hat eine feste Kennung, die aus ihrem Text berechnet wird. Neue oder umsortierte Karten ändern den Verlauf nicht. Wird der Text einer Karte geändert, beginnt ihr Verlauf neu.
 
 ## Karten ändern oder ergänzen
 

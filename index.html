@@ -64,6 +64,20 @@ button:disabled{cursor:default;opacity:.55}
 .after{border-left:4px solid var(--accent);padding:4px 0 4px 12px;display:flex;flex-direction:column;gap:6px}
 .after p{margin:0}
 .nouns{margin:0;padding-left:1.2em}
+[hidden]{display:none!important}
+.stack{display:flex;flex-direction:column;gap:14px}
+h2{font-family:var(--display);font-size:1.15rem;margin:0}
+.tbl{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+th,td{padding:6px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+td.num,th.num{text-align:right;white-space:nowrap}
+tr.grp th{color:var(--muted);font-weight:600;padding-top:14px}
+.small{color:var(--muted);font-size:.85rem}
+.errs{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:12px}
+.errs li{border-left:4px solid var(--bad);padding-left:12px;display:flex;flex-direction:column;gap:2px}
+.errs button{align-self:flex-start;margin-top:4px}
+textarea{font:inherit;color:inherit;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:8px 12px;width:100%;min-height:70px}
+.danger{border-color:var(--bad);color:var(--bad)}
 .actions{display:flex;gap:8px;flex-wrap:wrap}
 .primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
 details summary{cursor:pointer;color:var(--muted)}
@@ -81,27 +95,42 @@ details p{margin:8px 0 0}
     <span class="lbl">Bereich</span>
     <button class="tab" id="area-v" role="tab">Wortschatz</button>
     <button class="tab" id="area-g" role="tab">Grammatik</button>
-  </div>
-  <div class="tabs">
-    <label class="lbl" for="deck">Aufgabe</label>
-    <select id="deck"></select>
-  </div>
-  <div class="tabs" role="tablist" aria-label="Übungsart">
-    <span class="lbl">Übungsart</span>
-    <button class="tab" id="mode-write" role="tab">Schreiben</button>
-    <button class="tab" id="mode-order" role="tab">Satz ordnen</button>
-    <button class="tab" id="mode-choose" role="tab">Auswählen</button>
+    <button class="tab" id="area-s" role="tab">Übersicht</button>
   </div>
 
-  <div class="bar"><span id="progress"></span><span id="score"></span></div>
-  <section class="card" id="card"></section>
-  <div class="actions">
-    <button id="prev">Zurück</button>
-    <button id="next" class="primary">Nächste Karte</button>
-    <button id="shuffle">Karten mischen</button>
-    <button id="restart">Neu beginnen</button>
+  <div id="practice" class="stack">
+    <div class="tabs">
+      <label class="lbl" for="deck">Aufgabe</label>
+      <select id="deck"></select>
+    </div>
+    <div class="tabs" role="tablist" aria-label="Übungsart">
+      <span class="lbl">Übungsart</span>
+      <button class="tab" id="mode-write" role="tab">Schreiben</button>
+      <button class="tab" id="mode-order" role="tab">Satz ordnen</button>
+      <button class="tab" id="mode-choose" role="tab">Auswählen</button>
+    </div>
+    <div class="tabs">
+      <label class="lbl" for="filter">Karten</label>
+      <select id="filter">
+        <option value="all">Alle Karten</option>
+        <option value="wrong">Fehler wiederholen (letzter Versuch falsch)</option>
+        <option value="open">Noch nicht gelöst</option>
+        <option value="old">Länger als 7 Tage nicht geübt</option>
+      </select>
+    </div>
+    <div class="bar"><span id="progress"></span><span id="score"></span></div>
+    <section class="card" id="card"></section>
+    <p class="hint" id="hist"></p>
+    <div class="actions">
+      <button id="prev">Zurück</button>
+      <button id="next" class="primary">Nächste Karte</button>
+      <button id="shuffle">Karten mischen</button>
+      <button id="restart">Zum Anfang</button>
+    </div>
+    <p class="hint" id="src"></p>
   </div>
-  <p class="hint" id="src"></p>
+
+  <div id="stats" class="stack" hidden></div>
 </main>
 
 <script>
@@ -205,6 +234,27 @@ const DECKS=[
  V("Ihr Wunsch nach einem eigenen Garten ist endlich in Erfüllung [gegangen].",["gekommen","getreten"],{inf:"= wahr werden",n:"in Erfüllung gehen"}),
  V("Die Studie [fand] in der Fachwelt große Anerkennung.",["nahm","traf"],{inf:"= anerkannt werden",n:"Anerkennung finden"}),
  V("Der Bürgermeister [gab] den Anwohnern rechtzeitig Bescheid.",["machte","stellte"],{inf:"= informieren",n:"jemandem Bescheid geben / sagen"})
+]},
+
+{id:"nvv3",area:"v",kind:"vocab",own:true,hint:"Bedeutung",title:"Nomen-Verb-Verbindungen – Adel-Text",task:"Welches Verb gehört zu dem Nomen?",src:"Lesetext „Von der Faszination des Adels“, Sätze teilweise gekürzt",cards:[
+ V("Dem Adel [kommt] hierzulande schon lange keine politische Rolle mehr zu.",["geht","bringt"],{inf:"= eine Rolle haben",n:"jemandem kommt eine Rolle zu (zukommen)"}),
+ V("Am 14. August 1919 [trat] die Weimarer Reichsverfassung in Kraft.",["ging","kam"],{inf:"= gültig werden",n:"in Kraft treten (trat, ist getreten)"}),
+ V("Auch wenn es tatsächlich zu Verwunderung Anlass [gibt], ist die Faszination des Adels belegt.",["macht","nimmt"],{inf:"= ein Grund sein",n:"Anlass geben zu + Dativ"}),
+ V("Beamte und Künstler wurden in den Adelsstand [erhoben].",["gehoben","aufgehoben"],{inf:"= adeln",n:"jemanden in den Adelsstand erheben (erhob, hat erhoben)"}),
+ V("Das Gesetz [stellte] sämtliche Adelsbezeichnungen und Titel unter Strafe.",["setzte","legte"],{inf:"= verbieten und bestrafen",n:"etwas unter Strafe stellen"}),
+ V("Einige dieser Verpflichtungen sind mit der Zeit verloren [gegangen].",["gekommen","geraten"],{inf:"= verschwinden",n:"verloren gehen"}),
+ V("Viele Menschen [bringen] Politikern mit Adelstitel Vertrauen entgegen.",["geben","stellen"],{inf:"= vertrauen",n:"jemandem Vertrauen entgegenbringen"}),
+ V("Mancher möchte eine politische Aufladung des Phänomens nicht von der Hand [weisen].",["zeigen","legen"],{inf:"= nicht ausschließen",n:"etwas nicht von der Hand weisen (wies, hat gewiesen)"}),
+ V("Hier haben die Medien ihren Beitrag zu [leisten].",["machen","stellen"],{inf:"= mithelfen",n:"einen Beitrag leisten zu + Dativ"}),
+ V("Die Autorin möchte ihrem Erstaunen Ausdruck [verleihen].",["leihen","bringen"],{inf:"= ausdrücken",n:"einer Sache (Dativ) Ausdruck verleihen. Auch: etwas zum Ausdruck bringen"}),
+ V("Die Autorin möchte die Leser zum Umdenken [bewegen].",["ziehen","stellen"],{inf:"= überzeugen, etwas zu tun",n:"jemanden zu etwas bewegen (bewog, hat bewogen)"}),
+ V("Im letzten Abschnitt [spricht] die Autorin Mahnungen aus.",["sagt","redet"],{inf:"= mahnen",n:"eine Mahnung / eine Warnung aussprechen"}),
+ V("Die Autorin möchte Befürchtungen [ausräumen].",["aufräumen","abräumen"],{inf:"= beseitigen",n:"Befürchtungen / Zweifel ausräumen"}),
+ V("Die Faszination, die der Adel [ausübt], bewegt sich auf emotionaler Ebene.",["ausführt","ausmacht"],{inf:"= faszinieren",n:"Faszination / Einfluss ausüben auf + Akkusativ"}),
+ V("Übertragungen von Adelshochzeiten [erreichen] weltweit hohe Einschaltquoten.",["machen","treffen"],{inf:"= bekommen",n:"eine Quote / ein Ziel erreichen"}),
+ V("Ich [bin] der Ansicht, dass dieses Interesse nicht antidemokratisch ist.",["habe","stehe"],{inf:"= meinen",n:"der Ansicht / der Meinung sein (Genitiv)"}),
+ V("Häufig sind es die Medien, die das Bild einer besseren Welt [prägen].",["drücken","schlagen"],{inf:"= formen",n:"ein Bild prägen"}),
+ V("Diese Welt hat mit der Wirklichkeit der Leserschaft nicht viel zu [tun].",["machen","haben"],{inf:"= keinen Zusammenhang haben",n:"(nichts / nicht viel) zu tun haben mit + Dativ"})
 ]},
 
 {id:"zv",area:"g",kind:"zv",title:"Zustandspassiv oder Vorgangspassiv Perfekt – Universitätsbibliothek",task:"Zustandspassiv Präsens (ist/sind + Partizip II) oder Vorgangspassiv Perfekt (ist/sind + Partizip II + worden)?",src:"Arbeitsblatt „Die Modernisierung einer Universitätsbibliothek“, Lösungen vom Arbeitsblatt",cards:[
@@ -465,6 +515,99 @@ const DECKS=[
  V("Die Regierung reagierte gelassen [auf] die Kritik der Opposition.",["an","über"],{n:"reagieren auf + Akkusativ"}),
  V("Viele Zuhörer nahmen [an] der anschließenden Diskussion teil.",["bei","in"],{n:"teilnehmen an + Dativ"}),
  V("Der Erfolg des Films beruht [auf] einer wahren Geschichte.",["an","aus"],{n:"beruhen auf + Dativ"})
+]},
+
+{id:"prep3",area:"g",kind:"vocab",own:true,title:"Präpositionen – Adel-Text",task:"Welche Präposition fehlt?",src:"Lesetext „Von der Faszination des Adels“, Sätze teilweise gekürzt oder leicht umgestellt",cards:[
+ V("Das Interesse [an] Ereignissen aus der Welt des Adels hält sich offenbar ungebrochen.",["auf","über"],{n:"das Interesse an + Dativ (auch: für + Akkusativ)"}),
+ V("Die Faszination, die [vom] Adelsstand ausgeht, spiegelt sich im Marktanteil der Regenbogenpresse.",["am","zum"],{n:"ausgehen von + Dativ (von + dem = vom)"}),
+ V("Die Zeitschriften beschäftigen sich vornehmlich [mit] hochadeligen Ereignissen.",["über","an"],{n:"sich beschäftigen mit + Dativ"}),
+ V("Auch wenn es tatsächlich [zu] Verwunderung Anlass gibt, ist die Faszination des Adels belegt.",["an","auf"],{n:"Anlass geben zu + Dativ"}),
+ V("Alle Deutschen sind [vor] dem Gesetz gleich.",["bei","an"],{n:"vor dem Gesetz gleich sein"}),
+ V("Adelsbezeichnungen gelten nur [als] Teil des Namens.",["für","wie"],{n:"gelten als + Nominativ"}),
+ V("Beamte und Künstler wurden [in] den Adelsstand erhoben.",["an","auf"],{n:"jemanden in den Adelsstand erheben"}),
+ V("Solcherart Geadelte gehörten [zur] sogenannten „Zweiten Gesellschaft“.",["zum","in"],{n:"gehören zu + Dativ (zu + der = zur)"}),
+ V("Das Gesetz stellte sämtliche Adelsbezeichnungen und Titel [unter] Strafe.",["in","auf"],{n:"etwas unter Strafe stellen"}),
+ V("Die tätige Sorge [um] Untertanen gehörte zu den Pflichten des Adels.",["an","über"],{n:"die Sorge um + Akkusativ"}),
+ V("Einige dieser Verpflichtungen sind [mit] dem Verlust der politischen Bedeutung verloren gegangen.",["von","an"],{n:"mit + Dativ = gleichzeitig mit, als Folge von"}),
+ V("Verantwortung ist ein Wort, [auf] das man in diesem Zusammenhang häufig trifft.",["an","mit"],{n:"treffen auf + Akkusativ = stoßen auf"}),
+ V("Oft wird die Verantwortung [für] jahrhundertealte Traditionen und Werte betont.",["an","über"],{n:"die Verantwortung für + Akkusativ"}),
+ V("Auf der Managementebene ist es [von] Vorteil, einen Adelstitel anbieten zu können.",["zu","für"],{n:"von Vorteil sein"}),
+ V("Dies gilt offensichtlich ebenso [für] Akteure des politischen Lebens.",["an","zu"],{n:"gelten für + Akkusativ"}),
+ V("Viele Menschen bringen ihnen einen Vorschuss [an] Vertrauen entgegen.",["von","auf"],{n:"ein Vorschuss an + Dativ"}),
+ V("Darin ist das Verlangen [nach] ein bisschen Glanz zu sehen.",["auf","für"],{n:"das Verlangen / die Sehnsucht nach + Dativ"}),
+ V("Die Faszination bewegt sich [auf] emotionaler Ebene.",["in","an"],{n:"auf einer Ebene"}),
+ V("[Vor] allzu viel distanzloser Begeisterung ist zu warnen.",["Von","Über"],{n:"warnen vor + Dativ"}),
+ V("Die Autorin warnt nicht [aus] Angst vor antidemokratischen Bewegungen.",["vor","von"],{n:"aus Angst (Motiv). Aber: die Angst vor + Dativ"}),
+ V("[Von] der Flucht in mediale Traumwelten ist abzuraten.",["Vor","Gegen"],{n:"abraten von + Dativ"}),
+ V("Eine bewusste Auseinandersetzung [mit] dem eigenen Dasein ist einzufordern.",["über","an"],{n:"die Auseinandersetzung mit + Dativ"}),
+ V("Diese Welt hat [mit] der Wirklichkeit ihrer Leserschaft nicht viel zu tun.",["an","von"],{n:"zu tun haben mit + Dativ"}),
+ V("Die Begeisterung [für] eine idealisierte Welt ist groß.",["an","auf"],{n:"die Begeisterung für + Akkusativ"}),
+ V("Der Adel gilt als Schicht, die [aufgrund] ihrer höheren Stellung zu besonderen Verhaltensweisen verpflichtet ist.",["trotz","anstatt"],{n:"aufgrund + Genitiv = wegen"}),
+ V("Verantwortungsbewusstsein wird dem Adel auch [seitens] der Öffentlichkeit zugeschrieben.",["anhand","mittels"],{n:"seitens + Genitiv = von der Seite"}),
+ V("Wirtschaftstreibende wurden [zum] Zeichen der Anerkennung in den Adelsstand erhoben.",["am","vom"],{n:"zum Zeichen + Genitiv = als Zeichen"})
+]},
+
+{id:"konn",area:"g",kind:"vocab",own:true,title:"Konnektoren – Adel-Text",task:"Welcher Konnektor passt?",src:"Lesetext „Von der Faszination des Adels“, Sätze teilweise gekürzt; ein Satz aus dem Blatt „Irreale Bedingungssätze“",cards:[
+ V("[Auch wenn] es niemand so recht zugeben möchte: Die Faszination des Adels ist belegt.",["Weil","Damit"],{n:"auch wenn = obwohl (konzessiv), Verb am Ende"}),
+ V("Der Adel fasziniert viele. [Dabei] kommt ihm hierzulande schon lange keine politische Rolle mehr zu.",["Deshalb","Dafür"],{n:"dabei = obwohl doch (Gegensatz), Verb an Position 2"}),
+ V("[Als] die Weimarer Reichsverfassung in Kraft trat, wurden sämtliche Vorrechte des Adelsstandes abgeschafft.",["Wenn","Wann"],{n:"als = einmaliges Ereignis in der Vergangenheit"}),
+ V("Der Adel wurde rechtlich abgeschafft. Ihre Vermögen durften die Adelsfamilien [allerdings] behalten.",["deshalb","nämlich"],{n:"allerdings = aber (Einschränkung)"}),
+ V("Sie hatten kaum Ansehen eingebüßt, [denn] im 19. Jahrhundert wurden viele Bürger in den Adelsstand erhoben.",["weil","deshalb"],{n:"denn + Hauptsatz (Verb an Position 2). Aber: weil + Nebensatz (Verb am Ende)"}),
+ V("Sie gehörten [weder] zum Hochadel noch zum gewöhnlichen Volk.",["entweder","sowohl"],{n:"weder … noch = das eine nicht und das andere auch nicht"}),
+ V("Das Gesetz verfügte nicht nur die Abschaffung des Adels, [sondern] stellte auch sämtliche Titel unter Strafe.",["aber","jedoch"],{n:"nicht nur …, sondern auch …"}),
+ V("Einige dieser Verpflichtungen sind verloren gegangen. [Dennoch] scheint der Ausdruck auch heute noch zu gelten.",["Deshalb","Obwohl"],{n:"dennoch = trotzdem, Verb an Position 2"}),
+ V("Man spricht von Traditionen und Werten, [ohne dass] diese im Detail erläutert würden.",["sodass","damit"],{n:"ohne dass + Nebensatz"}),
+ V("Solche Bestrebungen sind eine Randerscheinung. [Darüber hinaus] bin ich der Ansicht, dass das Interesse nicht antidemokratisch ist.",["Stattdessen","Trotzdem"],{n:"darüber hinaus = außerdem"}),
+ V("Das Interesse ist nicht antidemokratisch. [Vielmehr] ist darin der Ausdruck bestimmter Sehnsüchte zu sehen.",["Folglich","Dagegen"],{n:"vielmehr = im Gegenteil, genauer gesagt (nach einer Verneinung)"}),
+ V("[Zum einen] ist da das Verlangen nach Glanz. Zum anderen bieten die Bilder eine Möglichkeit, dem Alltag zu entkommen.",["Einerseits","Erstens"],{n:"zum einen …, zum anderen …"}),
+ V("Die Autorin warnt nicht aus Angst vor antidemokratischen Bewegungen, [selbst wenn] mancher eine politische Aufladung nicht von der Hand weisen möchte.",["sodass","indem"],{n:"selbst wenn = auch wenn (konzessiv)"}),
+ V("Die Medien haben ihren Beitrag zu leisten, [denn] häufig sind sie es, die das Bild einer besseren Welt prägen.",["da","weil"],{n:"denn + Hauptsatz (Verb an Position 2). da / weil + Nebensatz (Verb am Ende)"}),
+ V("[Wenn] ich mehr Geld hätte, könnte ich mir eine teure Uhr kaufen.",["Als","Ob"],{n:"wenn + Konjunktiv II = irreale Bedingung"})
+]},
+
+{id:"satz",area:"g",own:true,title:"Satzbau – Adel-Text und Bedingungssätze",task:"Bilde aus den Satzteilen einen korrekten Satz.",src:"Lesetext „Von der Faszination des Adels“ und Blatt „Irreale Bedingungssätze“, Sätze teilweise gekürzt",cards:[
+ T("Oft genug … / verschämt abgetan / wird / das Interesse an solchen Vorgängen","Oft genug wird das Interesse an solchen Vorgängen verschämt abgetan.",null,{o:["Oft genug das Interesse an solchen Vorgängen wird verschämt abgetan.","Oft genug wird verschämt abgetan das Interesse an solchen Vorgängen."],n:"Hauptsatz: Das konjugierte Verb steht an Position 2, das Partizip am Satzende."}),
+ T("Als … / in Kraft trat / die Weimarer Reichsverfassung / abgeschafft / wurden / sämtliche Vorrechte des Adelsstandes","Als die Weimarer Reichsverfassung in Kraft trat, wurden sämtliche Vorrechte des Adelsstandes abgeschafft.",null,{o:["Als die Weimarer Reichsverfassung trat in Kraft, wurden sämtliche Vorrechte des Adelsstandes abgeschafft.","Als die Weimarer Reichsverfassung in Kraft trat, sämtliche Vorrechte des Adelsstandes wurden abgeschafft."],n:"Nebensatz: Verb am Ende. Steht der Nebensatz vorn, beginnt der Hauptsatz mit dem Verb."}),
+ T("Ihre ererbten Vermögen … / behalten / die Adelsfamilien / allerdings / durften","Ihre ererbten Vermögen durften die Adelsfamilien allerdings behalten.",null,{o:["Ihre ererbten Vermögen die Adelsfamilien durften allerdings behalten.","Ihre ererbten Vermögen durften behalten die Adelsfamilien allerdings."],n:"Auch ein Objekt kann auf Position 1 stehen. Das Verb bleibt auf Position 2, der Infinitiv steht am Ende."}),
+ T("In Artikel 109 … / dass / betont / gleich seien / wird / alle Deutschen / vor dem Gesetz","In Artikel 109 wird betont, dass alle Deutschen vor dem Gesetz gleich seien.",null,{o:["In Artikel 109 wird betont, dass alle Deutschen seien vor dem Gesetz gleich.","In Artikel 109 betont wird, dass alle Deutschen vor dem Gesetz gleich seien."],n:"dass-Satz: Verb am Ende."}),
+ T("Die Faszination, … / spiegelt sich / die / im Marktanteil der Regenbogenpresse / ausgeht / vom Adelsstand","Die Faszination, die vom Adelsstand ausgeht, spiegelt sich im Marktanteil der Regenbogenpresse.",null,{o:["Die Faszination, die ausgeht vom Adelsstand, spiegelt sich im Marktanteil der Regenbogenpresse.","Die Faszination, die vom Adelsstand ausgeht, sich spiegelt im Marktanteil der Regenbogenpresse."],n:"Relativsatz: Verb am Ende. Danach geht der Hauptsatz mit dem Verb weiter."}),
+ T("Dennoch … / zu gelten / dieser Ausdruck / scheint / auch heute noch","Dennoch scheint dieser Ausdruck auch heute noch zu gelten.",null,{o:["Dennoch dieser Ausdruck scheint auch heute noch zu gelten.","Dennoch scheint dieser Ausdruck zu gelten auch heute noch."],n:"Nach „dennoch“ folgt direkt das Verb. „zu“ + Infinitiv steht am Ende."}),
+ T("Zum anderen … / eine Möglichkeit / zu entkommen / bieten / dem eigenen grauen Alltag / die Hochglanzbilder","Zum anderen bieten die Hochglanzbilder eine Möglichkeit, dem eigenen grauen Alltag zu entkommen.",null,{o:["Zum anderen die Hochglanzbilder bieten eine Möglichkeit, dem eigenen grauen Alltag zu entkommen.","Zum anderen bieten die Hochglanzbilder eine Möglichkeit, zu entkommen dem eigenen grauen Alltag."],n:"Infinitivsatz: „zu“ + Infinitiv steht am Ende."}),
+ T("Frage: die Faszination / hat / tatsächlich / eine politische Relevanz / die vom Adel ausgeht","Hat die Faszination, die vom Adel ausgeht, tatsächlich eine politische Relevanz?",null,{o:["Die Faszination hat, die vom Adel ausgeht, tatsächlich eine politische Relevanz?","Hat die Faszination, die vom Adel geht aus, tatsächlich eine politische Relevanz?"],n:"Ja/Nein-Frage: Verb an Position 1. Im Relativsatz steht das Verb am Ende."}),
+ T("Darüber hinaus … / der Ansicht / ich / bin / dass / nicht als antidemokratisch / zu beurteilen ist / dieses Interesse","Darüber hinaus bin ich der Ansicht, dass dieses Interesse nicht als antidemokratisch zu beurteilen ist.",null,{o:["Darüber hinaus ich bin der Ansicht, dass dieses Interesse nicht als antidemokratisch zu beurteilen ist.","Darüber hinaus bin ich der Ansicht, dass dieses Interesse ist nicht als antidemokratisch zu beurteilen."],n:"Nach „darüber hinaus“ folgt das Verb, dann das Subjekt. Im dass-Satz steht das Verb am Ende."}),
+ T("Man … / von Traditionen und Werten / ohne dass / spricht / erläutert würden / im Detail / diese","Man spricht von Traditionen und Werten, ohne dass diese im Detail erläutert würden.",null,{o:["Man spricht von Traditionen und Werten, ohne dass diese würden im Detail erläutert.","Man von Traditionen und Werten spricht, ohne dass diese im Detail erläutert würden."],n:"ohne dass + Nebensatz: Verb am Ende."}),
+ T("Bedingungssatz ohne „wenn“: du / hättest / nicht so eine schwere Tasche dabei / wir / könnten / jetzt schneller gehen","Hättest du nicht so eine schwere Tasche dabei, könnten wir jetzt schneller gehen.",null,{o:["Du hättest nicht so eine schwere Tasche dabei, könnten wir jetzt schneller gehen.","Hättest du nicht so eine schwere Tasche dabei, wir könnten jetzt schneller gehen."],n:"Bedingungssatz ohne „wenn“: Verb an Position 1. Der Hauptsatz beginnt ebenfalls mit dem Verb."}),
+ T("Wenn … / öfter Sport / wir / trieben / uns besser / fühlten / wir","Wenn wir öfter Sport trieben, fühlten wir uns besser.",null,{o:["Wenn wir trieben öfter Sport, fühlten wir uns besser.","Wenn wir öfter Sport trieben, wir fühlten uns besser."],n:"wenn-Satz: Verb am Ende. Der Hauptsatz danach beginnt mit dem Verb."})
+]},
+
+{id:"k2",area:"g",own:true,title:"Konjunktiv II – irreale Bedingungssätze",task:"Ergänze die Verben im Konjunktiv II (Originalform, ohne „würde“).",src:"Blatt „Irreale Bedingungssätze (Konditionalsätze) mit Konjunktiv II (Originalform)“",cards:[
+ G("Wenn ich mehr Geld [hätte], [könnte] ich mir eine teure Uhr kaufen.","haben, können",null,{o:["hatte … konnte","habe … kann"],n:"haben – hatte – hätte; können – konnte – könnte"}),
+ G("Wenn du mehr [reistest], [sähest] du mehr von der Welt.","reisen, sehen",null,{alt:["reistest sähst"],o:["reist … siehst","reistest … sahst"],n:"reisen – reiste – reiste (regelmäßig: Konjunktiv II = Präteritum); sehen – sah – sähe. Auch „sähst“ ist richtig."}),
+ G("Wenn Thomas mehr [lernte], [hätte] er bessere Noten.","lernen, haben",null,{o:["lernt … hat","lernte … hatte"],n:"lernen – lernte – lernte (regelmäßig); haben – hatte – hätte"}),
+ G("Wenn du besser kochen [könntest], [verließe] dich dein Mann nicht.","können, verlassen",null,{o:["konntest … verließ","kannst … verlässt"],n:"können – konnte – könnte; verlassen – verließ – verließe"}),
+ G("Wenn wir öfter Sport [trieben], [fühlten] wir uns besser.","treiben, fühlen",null,{o:["treiben … fühlen","treibten … fühlten"],n:"treiben – trieb – triebe; fühlen – fühlte – fühlte. Bei „wir“ sind Präteritum und Konjunktiv II hier gleich."}),
+ G("Wenn er weniger [äße], [wäre] er dünner.","essen, sein",null,{o:["aß … war","isst … ist"],n:"essen – aß – äße; sein – war – wäre"}),
+ G("Wenn ihr hier rauchen [dürftet], [wärt] ihr glücklicher.","dürfen, sein",null,{alt:["dürftet wäret"],o:["durftet … wart","dürft … seid"],n:"dürfen – durfte – dürfte; sein – war – wäre. Auch „wäret“ ist richtig."}),
+ G("Wenn ich viel arbeiten [müsste], [wäre] ich nicht glücklich.","müssen, sein",null,{o:["musste … war","muss … bin"],n:"müssen – musste – müsste; sein – war – wäre"}),
+ G("Wenn du ein schnelleres Auto [hättest], [könntest] du schneller fahren.","haben, können",null,{o:["hattest … konntest","hast … kannst"],n:"haben – hatte – hätte; können – konnte – könnte"}),
+ G("Wenn Julia öfter zur Schule [ginge], [lernte] sie mehr.","gehen, lernen",null,{o:["ging … lernte","geht … lernt"],n:"gehen – ging – ginge; lernen – lernte – lernte"}),
+ G("Wenn unser Autor schneller [führe], [wären] wir schneller in Italien.","fahren, sein",null,{o:["fuhr … waren","fährt … sind"],n:"fahren – fuhr – führe; sein – war – wäre. Auf dem Blatt steht „Autor“; gemeint ist vermutlich „Auto“."}),
+ G("[Malte] dein Cousin besser, [wären] seine Bilder beliebter.","malen, sein",null,{o:["Malt … sind","Malte … waren"],n:"Ohne „wenn“ steht das Verb an Position 1. malen – malte – malte; sein – war – wäre"}),
+ G("[Hättest] du nicht so eine schwere Tasche dabei, [könnten] wir jetzt schneller gehen.","haben, können",null,{o:["Hattest … konnten","Hast … können"],n:"Ohne „wenn“ steht das Verb an Position 1. haben – hatte – hätte; können – konnte – könnte"}),
+ G("Wenn ihr besser Spanisch [sprächet], [verstündet] ihr die Spanier besser.","sprechen, verstehen",null,{alt:["sprächet verständet","sprächt verstündet","sprächt verständet"],o:["spracht … verstandet","sprecht … versteht"],n:"sprechen – sprach – spräche; verstehen – verstand – verstünde (auch: verstände). Auch „sprächt“ ist richtig."})
+]},
+
+{id:"pe",area:"g",own:true,title:"Passiversatz, Passiv und indirekte Rede – Adel-Text",task:"Forme den Satz um.",src:"Lesetext „Von der Faszination des Adels“, Sätze teilweise gekürzt",cards:[
+ T("Vorrechte der Geburt oder des Standes sind aufzuheben. (Passiv mit „müssen“)","Vorrechte der Geburt oder des Standes müssen aufgehoben werden.",null,{o:["Vorrechte der Geburt oder des Standes müssen aufheben werden.","Vorrechte der Geburt oder des Standes müssen aufgehoben worden."],n:"sein + zu + Infinitiv = Passiv mit müssen oder können. Hier (Gesetzestext): müssen."}),
+ T("Aus politischen Überlegungen lässt sich ein solcher Vertrauensvorschuss nicht erklären. (Passiv mit Modalverb)","Aus politischen Überlegungen kann ein solcher Vertrauensvorschuss nicht erklärt werden.",null,{o:["Aus politischen Überlegungen kann ein solcher Vertrauensvorschuss nicht erklären werden.","Aus politischen Überlegungen muss ein solcher Vertrauensvorschuss nicht erklärt werden."],n:"sich lassen + Infinitiv = Passiv mit können"}),
+ T("Diese Fragen sind mit einem eindeutigen Nein zu beantworten. (Passiv mit „müssen“)","Diese Fragen müssen mit einem eindeutigen Nein beantwortet werden.",null,{o:["Diese Fragen müssen mit einem eindeutigen Nein beantworten werden.","Diese Fragen müssen mit einem eindeutigen Nein beantwortet worden."],n:"sein + zu + Infinitiv = Passiv mit müssen oder können"}),
+ T("Vor allzu viel distanzloser Begeisterung ist zu warnen. (Passiv mit „müssen“)","Vor allzu viel distanzloser Begeisterung muss gewarnt werden.",null,{o:["Vor allzu viel distanzloser Begeisterung muss warnen werden.","Vor allzu viel distanzloser Begeisterung muss gewarnt worden."],n:"Unpersönliches Passiv: warnen vor + Dativ, kein Subjekt, Verb im Singular"}),
+ T("Von der Flucht in mediale Traumwelten ist abzuraten. (Passiv mit „müssen“)","Von der Flucht in mediale Traumwelten muss abgeraten werden.",null,{o:["Von der Flucht in mediale Traumwelten muss abraten werden.","Von der Flucht in mediale Traumwelten muss abgeratet werden."],n:"abraten – riet ab – hat abgeraten; abraten von + Dativ"}),
+ T("Eine bewusste Auseinandersetzung mit dem eigenen Dasein ist einzufordern. (Passiv mit „müssen“)","Eine bewusste Auseinandersetzung mit dem eigenen Dasein muss eingefordert werden.",null,{o:["Eine bewusste Auseinandersetzung mit dem eigenen Dasein muss einfordern werden.","Eine bewusste Auseinandersetzung mit dem eigenen Dasein muss eingefordert worden."],n:"Bei trennbaren Verben steht „zu“ zwischen Vorsilbe und Verb: einzufordern"}),
+ T("Adelstitel waren beibehalten worden. (Aktiv mit „man“)","Man hatte Adelstitel beibehalten.",null,{o:["Man hat Adelstitel beibehalten.","Man war Adelstitel beibehalten."],n:"Passiv Plusquamperfekt (waren … worden) → Aktiv Plusquamperfekt (hatte …)"}),
+ T("Mit dem Adelsgesetz wurde der Adel rechtlich abgeschafft. (Aktiv mit „man“)","Mit dem Adelsgesetz schaffte man den Adel rechtlich ab.",null,{o:["Mit dem Adelsgesetz schafft man den Adel rechtlich ab.","Mit dem Adelsgesetz abschaffte man den Adel rechtlich."],n:"Passiv Präteritum → Aktiv Präteritum; „der Adel“ wird zum Akkusativobjekt „den Adel“"}),
+ T("„Alle Deutschen sind vor dem Gesetz gleich.“ (indirekte Rede: In der Verfassung wird betont, dass …)","In der Verfassung wird betont, dass alle Deutschen vor dem Gesetz gleich seien.",null,{o:["In der Verfassung wird betont, dass alle Deutschen vor dem Gesetz gleich sein.","In der Verfassung wird betont, dass alle Deutschen seien vor dem Gesetz gleich."],n:"Konjunktiv I von „sein“: er sei, sie seien"}),
+ T("„Ich blättere höchstens im Wartezimmer in den Klatschblättern.“ (indirekte Rede: Viele sagen, man …)","Viele sagen, man blättere höchstens im Wartezimmer in den Klatschblättern.",null,{o:["Viele sagen, man blättern höchstens im Wartezimmer in den Klatschblättern.","Viele sagen, man höchstens im Wartezimmer in den Klatschblättern blättere."],n:"Konjunktiv I: Stamm + e (man blättere, man gerate). Ohne „dass“ bleibt das Verb an Position 2."})
 ]}
 ];
 DECKS[0].bank=BANK;
@@ -483,7 +626,8 @@ const expected=c=>isGap(c)?parts(c).join(" "):c.a;
 const shownSolution=c=>isGap(c)?parts(c).join(" … "):c.a;
 function options(c,deck){
   let o;
-  if(deck.kind==="vocab") o=[parts(c)[0]].concat(c.d);
+  if(c.o) o=[isGap(c)?parts(c).join(" … "):c.a].concat(c.o);
+  else if(deck.kind==="vocab") o=[parts(c)[0]].concat(c.d);
   else if(isGap(c)){
     const [aux,rest]=parts(c), j=(a,r)=>a+" … "+r;
     if(deck.kind==="zv"){
@@ -594,29 +738,113 @@ N("die Reparatur, Pl. die Reparaturen","Reparatur");N("das Radwegenetz, Pl. die 
 N("die Jahreszeit, Pl. die Jahreszeiten","Jahreszeit");N("die Geduld","Geduld");N("der Raum, Pl. die Räume","Raum");N("die Veranstaltung, Pl. die Veranstaltungen","Veranstaltungen");N("der Mensch, Pl. die Menschen","Menschen");
 N("die Angst, Pl. die Ängste","Angst");N("der Verlust, Pl. die Verluste","Verlust");N("der Arbeitsplatz, Pl. die Arbeitsplätze","Arbeitsplatzes");N("der Zuhörer, Pl. die Zuhörer","Zuhörer");N("der Erfolg, Pl. die Erfolge","Erfolg");
 N("der Film, Pl. die Filme","Films");N("der Experte, Pl. die Experten","Experten");
+// Adel-Text und Konditionalsätze
+N("der Adel","Adel","Adels");N("die Reichsverfassung","Reichsverfassung");N("die Verwunderung","Verwunderung");N("der Anlass, Pl. die Anlässe","Anlass");N("die Faszination","Faszination");N("der Künstler, Pl. die Künstler","Künstler");N("der Beamte / die Beamtin, Pl. die Beamten","Beamte");N("der Adelsstand","Adelsstand","Adelsstandes");N("die Adelsbezeichnung, Pl. die Adelsbezeichnungen","Adelsbezeichnungen");N("der Titel, Pl. die Titel","Titel");N("die Strafe, Pl. die Strafen","Strafe");N("die Verpflichtung, Pl. die Verpflichtungen","Verpflichtungen");N("der Politiker, Pl. die Politiker","Politikern");N("der Adelstitel, Pl. die Adelstitel","Adelstitel");N("das Vertrauen","Vertrauen");N("die Aufladung, Pl. die Aufladungen","Aufladung");N("das Phänomen, Pl. die Phänomene","Phänomens");N("die Hand, Pl. die Hände","Hand");N("die Autorin, Pl. die Autorinnen","Autorin");N("das Erstaunen","Erstaunen");N("der Leser, Pl. die Leser","Leser");N("das Umdenken","Umdenken");N("der Abschnitt, Pl. die Abschnitte","Abschnitt");N("die Mahnung, Pl. die Mahnungen","Mahnungen");N("die Befürchtung, Pl. die Befürchtungen","Befürchtungen");N("die Ebene, Pl. die Ebenen","Ebene");N("die Adelshochzeit, Pl. die Adelshochzeiten","Adelshochzeiten");N("die Einschaltquote, Pl. die Einschaltquoten","Einschaltquoten");N("die Übertragung, Pl. die Übertragungen","Übertragungen");N("die Ansicht, Pl. die Ansichten","Ansicht");N("das Interesse, Pl. die Interessen","Interesse");N("das Bild, Pl. die Bilder","Bild","Bilder");N("die Welt, Pl. die Welten","Welt");N("die Wirklichkeit","Wirklichkeit");N("die Leserschaft","Leserschaft");N("das Ereignis, Pl. die Ereignisse","Ereignissen");N("der Marktanteil, Pl. die Marktanteile","Marktanteil");N("die Regenbogenpresse","Regenbogenpresse");N("die Zeitschrift, Pl. die Zeitschriften","Zeitschriften");N("der Deutsche / die Deutsche, Pl. die Deutschen","Deutschen");N("der Teil, Pl. die Teile","Teil");N("der Name, Pl. die Namen","Namens");N("der Geadelte / die Geadelte, Pl. die Geadelten","Geadelte");N("die Gesellschaft, Pl. die Gesellschaften","Gesellschaft");N("der Untertan, Pl. die Untertanen","Untertanen");N("die Pflicht, Pl. die Pflichten","Pflichten");N("die Bedeutung, Pl. die Bedeutungen","Bedeutung");N("das Wort, Pl. die Wörter / die Worte","Wort");N("der Zusammenhang, Pl. die Zusammenhänge","Zusammenhang");N("die Tradition, Pl. die Traditionen","Traditionen");N("der Wert, Pl. die Werte","Werte","Werten");N("die Managementebene, Pl. die Managementebenen","Managementebene");N("der Vorteil, Pl. die Vorteile","Vorteil");N("der Akteur, Pl. die Akteure","Akteure");N("das Leben, Pl. die Leben","Lebens");N("der Vorschuss, Pl. die Vorschüsse","Vorschuss");N("das Verlangen","Verlangen");N("der Glanz","Glanz");N("die Begeisterung","Begeisterung");N("die Bewegung, Pl. die Bewegungen","Bewegungen");N("die Flucht","Flucht");N("die Traumwelt, Pl. die Traumwelten","Traumwelten");N("die Auseinandersetzung, Pl. die Auseinandersetzungen","Auseinandersetzung");N("das Dasein","Dasein");N("die Schicht, Pl. die Schichten","Schicht");N("die Verhaltensweise, Pl. die Verhaltensweisen","Verhaltensweisen");N("die Öffentlichkeit","Öffentlichkeit");N("das Zeichen, Pl. die Zeichen","Zeichen");N("das Vorrecht, Pl. die Vorrechte","Vorrechte");N("das Vermögen, Pl. die Vermögen","Vermögen");N("die Adelsfamilie, Pl. die Adelsfamilien","Adelsfamilien");N("das Ansehen","Ansehen");N("der Hochadel","Hochadel");N("das Volk, Pl. die Völker","Volk");N("die Abschaffung","Abschaffung");N("das Detail, Pl. die Details","Detail");N("die Bestrebung, Pl. die Bestrebungen","Bestrebungen");N("die Randerscheinung, Pl. die Randerscheinungen","Randerscheinung");N("die Sehnsucht, Pl. die Sehnsüchte","Sehnsüchte");N("die Möglichkeit, Pl. die Möglichkeiten","Möglichkeit");N("der Alltag","Alltag");N("der Vorgang, Pl. die Vorgänge","Vorgängen");N("das Hochglanzbild, Pl. die Hochglanzbilder","Hochglanzbilder");N("die Relevanz","Relevanz");N("der Sport","Sport");N("die Note, Pl. die Noten","Noten");N("die Schule, Pl. die Schulen","Schule");N("der Autor, Pl. die Autoren","Autor");N("der Cousin, Pl. die Cousins","Cousin");N("der Spanier, Pl. die Spanier","Spanier");N("die Geburt, Pl. die Geburten","Geburt");N("der Stand, Pl. die Stände","Standes");N("die Überlegung, Pl. die Überlegungen","Überlegungen");N("der Vertrauensvorschuss","Vertrauensvorschuss");N("die Frage, Pl. die Fragen","Fragen");N("das Nein","Nein");N("das Adelsgesetz","Adelsgesetz");N("die Verfassung, Pl. die Verfassungen","Verfassung");N("das Wartezimmer, Pl. die Wartezimmer","Wartezimmer");N("das Klatschblatt, Pl. die Klatschblätter","Klatschblättern");N("das Verantwortungsbewusstsein","Verantwortungsbewusstsein");N("der Wirtschaftstreibende / die Wirtschaftstreibende, Pl. die Wirtschaftstreibenden","Wirtschaftstreibende");N("das Jahrhundert, Pl. die Jahrhunderte","Jahrhundert");
 function nounsOf(c){
-  const text=(c.q?c.q+" ":"")+full(c), out=[];
+  const text=(c.q&&!c.o?c.q+" ":"")+full(c), out=[];
   text.split(/[\s\/]+/).forEach(t=>{const e=NOUNS[t.replace(/[.,!?…„“"”()]/g,"")];if(e&&!out.includes(e))out.push(e);});
   return out;
 }
+/* feste Kennung pro Karte, unabhängig von der Position im Kartensatz */
+const hash=t=>{let h=5381;for(let i=0;i<t.length;i++)h=((h<<5)+h+t.charCodeAt(i))>>>0;return h.toString(36);};
+const cardKey=(deck,c)=>deck.id+":"+hash((c.q||"")+"|"+c.a);
+const MODES=["write","order","choose"];
+function cleanH(h){
+  const out={};
+  if(!h||typeof h!=="object") return out;
+  for(const k of Object.keys(h)){
+    if(!h[k]||typeof h[k]!=="object") continue;
+    for(const m of MODES){
+      const r=h[k][m];
+      if(!r||typeof r.n!=="number") continue;
+      (out[k]||(out[k]={}))[m]={n:Math.max(0,r.n|0),ok:Math.max(0,r.ok|0),f:r.f===true?true:r.f===false?false:null,t:+r.t||0,lo:!!r.lo,w:typeof r.w==="string"?r.w.slice(0,300):""};
+    }
+  }
+  return out;
+}
+/* Zusammenführen: pro Karte und Übungsart gewinnt der Eintrag mit mehr Versuchen, bei Gleichstand der neuere */
+function mergeH(base,inc){
+  let total=0,taken=0;
+  for(const k of Object.keys(inc)) for(const m of Object.keys(inc[k])){
+    total++;
+    const a=(base[k]||{})[m], b=inc[k][m];
+    if(!a||b.n>a.n||(b.n===a.n&&b.t>a.t)){(base[k]||(base[k]={}))[m]=b;taken++;}
+  }
+  return {total,taken};
+}
 /*UI*/
-const esc=t=>t.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;");
+const esc=t=>String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;");
 const shuffled=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
 const $=id=>document.getElementById(id);
+const MODE_NAME={write:"Schreiben",order:"Satz ordnen",choose:"Auswählen"};
+const AREA_NAME={v:"Wortschatz",g:"Grammatik"};
+const FILTERS=["all","wrong","open","old"];
+const EMPTY={all:"Dieser Kartensatz enthält keine Karten.",wrong:"Keine offenen Fehler in diesem Kartensatz und dieser Übungsart.",open:"Du hast hier schon alle Karten gelöst.",old:"Du hast hier alle Karten in den letzten 7 Tagen geübt."};
+const KEY="c1-lernkarten-v2", OLD_KEY="c1-lernkarten-v1";
+const fmt=t=>t?new Date(t).toLocaleDateString("de-DE"):"–";
 
-const st={area:"v",deck:{v:"bonn",g:"zv"},mode:"write",pos:{},order:{},done:{}};
-const KEY="c1-lernkarten-v1";
-function save(){try{const done={};for(const k in st.done)done[k]=[...st.done[k]];localStorage.setItem(KEY,JSON.stringify({area:st.area,deck:st.deck,mode:st.mode,pos:st.pos,done}));}catch(e){}}
-(function load(){try{const s=JSON.parse(localStorage.getItem(KEY)||"null");if(!s)return;
-  if(s.area==="v"||s.area==="g")st.area=s.area;
-  if(["write","order","choose"].includes(s.mode))st.mode=s.mode;
-  for(const a of ["v","g"])if(s.deck&&DECKS.some(d=>d.id===s.deck[a]&&d.area===a))st.deck[a]=s.deck[a];
-  Object.assign(st.pos,s.pos||{});
-  for(const k in (s.done||{}))st.done[k]=new Set(s.done[k]);
-}catch(e){}})();
+let H={};   // Verlauf: Kartenkennung -> Übungsart -> {n: Versuche, ok: richtige, f: erster Versuch richtig, t: Zeitpunkt, lo: letzter Versuch richtig, w: letzte falsche Antwort}
+const st={screen:"cards",area:"v",deck:{v:"bonn",g:"zv"},mode:"write",filter:"all",pos:{},order:{},view:null,msg:"",wipe:false};
+
+function save(){try{localStorage.setItem(KEY,JSON.stringify({v:2,ui:{area:st.area,deck:st.deck,mode:st.mode,filter:st.filter,pos:st.pos},h:H}));}catch(e){}}
+(function load(){
+  try{
+    const s=JSON.parse(localStorage.getItem(KEY)||"null");
+    if(s){
+      const u=s.ui||{};
+      if(u.area==="v"||u.area==="g") st.area=u.area;
+      if(MODES.includes(u.mode)) st.mode=u.mode;
+      if(FILTERS.includes(u.filter)) st.filter=u.filter;
+      for(const a of ["v","g"]) if(u.deck&&DECKS.some(d=>d.id===u.deck[a]&&d.area===a)) st.deck[a]=u.deck[a];
+      if(u.pos&&typeof u.pos==="object") for(const k of Object.keys(u.pos)) st.pos[k]=u.pos[k]|0;
+      H=cleanH(s.h);
+      return;
+    }
+    // ältere Fassung: dort war nur gespeichert, welche Karten gelöst sind
+    const o=JSON.parse(localStorage.getItem(OLD_KEY)||"null");
+    if(o&&o.done) for(const k of Object.keys(o.done)){
+      const [id,m]=k.split("/"), d=DECKS.find(x=>x.id===id);
+      if(!d||!MODES.includes(m)) continue;
+      for(const i of o.done[k]) if(d.cards[i]){const ck=cardKey(d,d.cards[i]);(H[ck]||(H[ck]={}))[m]={n:1,ok:1,f:null,t:Date.now(),lo:true,w:""};}
+    }
+  }catch(e){}
+})();
+
 const curDeck=()=>DECKS.find(d=>d.id===st.deck[st.area]);
-const doneSet=()=>{const k=st.deck[st.area]+"/"+st.mode;return st.done[k]||(st.done[k]=new Set());};
-function list(deck){const o=st.order[deck.id]||(st.order[deck.id]=deck.cards.map((_,i)=>i));return st.mode==="order"?o.filter(i=>!deck.cards[i].noOrder):o;}
+const recOf=(deck,c,m)=>(H[cardKey(deck,c)]||{})[m||st.mode];
+function matches(deck,c){
+  const r=recOf(deck,c);
+  if(st.filter==="wrong") return !!r&&r.n>0&&!r.lo;
+  if(st.filter==="open") return !r||r.ok===0;
+  if(st.filter==="old") return !r||Date.now()-r.t>7*864e5;
+  return true;
+}
+/* Die Kartenliste wird nur neu gebildet, wenn Kartensatz, Übungsart oder Auswahl wechseln. So verschwindet eine Karte nicht, während du sie übst. */
+function viewList(deck){
+  const key=[deck.id,st.mode,st.filter].join("/");
+  if(!st.view||st.view.key!==key){
+    const base=(st.order[deck.id]||(st.order[deck.id]=deck.cards.map((_,i)=>i))).filter(i=>st.mode!=="order"||!deck.cards[i].noOrder);
+    st.view={key,ids:base.filter(i=>matches(deck,deck.cards[i]))};
+  }
+  return st.view.ids;
+}
+function record(deck,c,correct,answer){
+  const k=cardKey(deck,c), byMode=H[k]||(H[k]={}), r=byMode[st.mode]||(byMode[st.mode]={n:0,ok:0,f:null,t:0,lo:false,w:""});
+  if(r.n===0) r.f=correct;
+  r.n++; if(correct) r.ok++; else r.w=String(answer).slice(0,300);
+  r.lo=correct; r.t=Date.now();
+  save(); score(); histLine(deck,c);
+}
+function score(){
+  const deck=curDeck(), cards=deck.cards.filter(c=>st.mode!=="order"||!c.noOrder);
+  let ok=0,first=0;
+  cards.forEach(c=>{const r=recOf(deck,c);if(r&&r.ok)ok++;if(r&&r.f===true)first++;});
+  $("score").textContent="Gelöst: "+ok+" von "+cards.length+" · beim ersten Versuch richtig: "+first;
+}
+function histLine(deck,c){
+  const r=recOf(deck,c);
+  $("hist").textContent=r&&r.n?"Dein Verlauf für diese Karte: "+r.n+(r.n===1?" Versuch":" Versuche")+", davon "+r.ok+" richtig · zuletzt am "+fmt(r.t)+(r.lo?"":" · letzter Versuch falsch"):"Diese Karte hast du in dieser Übungsart noch nicht geübt.";
+}
 
 function gapHtml(c,fill){return esc(c.a).replace(/\[(.+?)\]/g,(m,p)=>'<span class="gap">'+(fill?p:"&nbsp;")+'</span>')+(c.inf?' <span class="inf">('+esc(c.inf)+')</span>':'');}
 function head(c,deck){
@@ -635,24 +863,33 @@ function after(c,deck){
   if(ns.length) h+='<p><strong>Nomen:</strong></p><ul class="nouns">'+ns.map(x=>'<li>'+esc(x)+'</li>').join("")+'</ul>';
   return h+'</div>';
 }
-function solved(idx){doneSet().add(idx);score();save();}
-function score(){const deck=curDeck();$("score").textContent="Gelöst: "+[...doneSet()].filter(i=>list(deck).includes(i)).length+" von "+list(deck).length;}
 
 function render(){
-  const deck=curDeck(), l=list(deck);
-  let pos=Math.min(st.pos[deck.id]||0,l.length-1); st.pos[deck.id]=pos;
-  const idx=l[pos], c=deck.cards[idx];
-  ["v","g"].forEach(a=>$("area-"+a).setAttribute("aria-selected",st.area===a));
-  ["write","order","choose"].forEach(m=>$("mode-"+m).setAttribute("aria-selected",st.mode===m));
+  ["v","g"].forEach(a=>$("area-"+a).setAttribute("aria-selected",st.screen==="cards"&&st.area===a));
+  $("area-s").setAttribute("aria-selected",st.screen==="stats");
+  $("practice").hidden=st.screen!=="cards"; $("stats").hidden=st.screen!=="stats";
+  if(st.screen==="stats"){renderStats();save();return;}
+  const deck=curDeck(), l=viewList(deck);
+  MODES.forEach(m=>$("mode-"+m).setAttribute("aria-selected",st.mode===m));
   $("deck").innerHTML=DECKS.filter(d=>d.area===st.area).map(d=>'<option value="'+d.id+'"'+(d.id===deck.id?" selected":"")+'>'+esc(d.title)+' ('+d.cards.length+')</option>').join("");
+  $("filter").value=st.filter;
+  $("src").textContent="Quelle: "+deck.src+(deck.own?". Die Lösungen stammen von Claude, nicht aus einem offiziellen Schlüssel.":".");
+  score();
+  if(!l.length){
+    $("progress").textContent="Keine Karten in dieser Auswahl";
+    $("prev").disabled=$("next").disabled=true; $("hist").textContent="";
+    $("card").innerHTML='<p class="sentence">'+EMPTY[st.filter]+'</p><p class="hint">Wähle bei „Karten“ eine andere Auswahl.</p>';
+    save(); return;
+  }
+  const pos=Math.max(0,Math.min(st.pos[deck.id]||0,l.length-1)); st.pos[deck.id]=pos;
+  const c=deck.cards[l[pos]];
   $("progress").textContent="Karte "+(pos+1)+" von "+l.length;
   $("prev").disabled=pos===0; $("next").disabled=pos===l.length-1;
-  $("src").textContent="Quelle: "+deck.src+(deck.own?". Die Lösungen stammen von Claude, nicht aus einem offiziellen Schlüssel.":".");
-  score(); save();
-  ({write:renderWrite,order:renderOrder,choose:renderChoose})[st.mode](c,deck,idx);
+  histLine(deck,c); save();
+  ({write:renderWrite,order:renderOrder,choose:renderChoose})[st.mode](c,deck);
 }
 
-function renderWrite(c,deck,idx){
+function renderWrite(c,deck){
   const cands=[expected(c)].concat(c.alt||[]);
   let state="",msg="",show=false,val="";
   const draw=()=>{
@@ -667,17 +904,18 @@ function renderWrite(c,deck,idx){
       e.preventDefault(); val=$("answer").value;
       if(!val.trim()) return;
       const hit=cands.find(x=>norm(x)===norm(val));
-      if(hit){state="ok";msg="Richtig."+(cands.some(x=>strip(x)===strip(val))?"":" Achte auf Großschreibung und Umlaute.");solved(idx);}
+      if(hit){state="ok";msg="Richtig."+(cands.some(x=>strip(x)===strip(val))?"":" Achte auf Großschreibung und Umlaute.");}
       else{state="no";msg="Noch nicht richtig. Versuch es noch einmal oder zeig die Lösung.";}
+      record(deck,c,!!hit,val);
       draw();
     };
-    $("reveal").onclick=()=>{val=$("answer").value;show=true;draw();};
+    $("reveal").onclick=()=>{val=$("answer").value;if(state!=="ok"&&!show)record(deck,c,false,"(Lösung angezeigt)");show=true;draw();};
     if(state!=="ok"&&(state||show)) $("answer").focus();
   };
   draw();
 }
 
-function renderOrder(c,deck,idx){
+function renderOrder(c,deck){
   const target=orderTokens(c);
   let pool=shuffled(target.map((t,i)=>({t,i})));
   if(pool.length>1&&pool.every((p,k)=>p.i===k)) pool.reverse();
@@ -696,17 +934,17 @@ function renderOrder(c,deck,idx){
     });
     $("check").onclick=()=>{
       const got=line.map(p=>p.t).join(" ");
-      const ok=got===target.join(" ")||(c.q&&(c.alt||[]).some(x=>x===got));
-      state=ok?"ok":"no"; if(ok) solved(idx); draw();
+      const ok=got===target.join(" ")||!!(c.q&&(c.alt||[]).some(x=>x===got));
+      state=ok?"ok":"no"; record(deck,c,ok,got); draw();
     };
     $("clear").onclick=()=>{pool=pool.concat(line);line=[];state="";draw();};
-    $("reveal").onclick=()=>{show=true;draw();};
+    $("reveal").onclick=()=>{if(state!=="ok"&&!show)record(deck,c,false,"(Lösung angezeigt)");show=true;draw();};
   };
   draw();
 }
 
-function renderChoose(c,deck,idx){
-  const o=options(c,deck), ok=[o[0]].concat(deck.kind==="vocab"?(c.alt||[]):[]), sh=shuffled([...new Set(o)]);
+function renderChoose(c,deck){
+  const o=options(c,deck), ok=[o[0]].concat(deck.kind==="vocab"&&!c.o?(c.alt||[]):[]), sh=shuffled([...new Set(o)]);
   const wrong=new Set(); let hit=null;
   const draw=()=>{
     $("card").innerHTML=head(c,deck)+
@@ -714,21 +952,105 @@ function renderChoose(c,deck,idx){
       '<p class="fb '+(hit?"ok":wrong.size?"no":"")+'" aria-live="polite">'+(hit?"Richtig.":wrong.size?"Das stimmt nicht. Versuch eine andere Antwort.":"")+'</p>'+
       (hit?after(c,deck):'');
     $("card").querySelectorAll(".word").forEach(b=>b.onclick=()=>{
-      const w=sh[+b.dataset.i];
-      if(ok.includes(w)){hit=w;solved(idx);} else wrong.add(w);
+      const w=sh[+b.dataset.i], good=ok.includes(w);
+      if(good) hit=w; else wrong.add(w);
+      record(deck,c,good,w);
       draw();
     });
   };
   draw();
 }
 
-["v","g"].forEach(a=>$("area-"+a).onclick=()=>{st.area=a;render();});
-["write","order","choose"].forEach(m=>$("mode-"+m).onclick=()=>{st.mode=m;render();});
+/* ---------- Übersicht ---------- */
+function renderStats(){
+  let attempts=0,last=0; const solved=new Set(), errs=[]; let totalCards=0;
+  const rows=DECKS.map(d=>{
+    totalCards+=d.cards.length;
+    const cells=MODES.map(m=>{
+      const cards=d.cards.filter(c=>m!=="order"||!c.noOrder); let ok=0,first=0;
+      cards.forEach(c=>{const r=recOf(d,c,m);if(!r)return;attempts+=r.n;last=Math.max(last,r.t);if(r.ok){ok++;solved.add(cardKey(d,c));}if(r.f===true)first++;if(r.n&&!r.lo)errs.push({d,c,m,r});});
+      return {ok,first,n:cards.length};
+    });
+    return {d,cells};
+  });
+  errs.sort((a,b)=>b.r.t-a.r.t);
+  const shown=errs.slice(0,30);
+  let h='<section class="card"><h2>Dein Stand</h2>'+
+    '<p>'+(attempts?attempts+(attempts===1?" Versuch":" Versuche")+" insgesamt · "+solved.size+" von "+totalCards+" Karten mindestens einmal gelöst · zuletzt geübt am "+fmt(last):"Du hast noch keine Karte geübt.")+'</p>'+
+    '<div class="tbl"><table><thead><tr><th>Kartensatz</th>'+MODES.map(m=>'<th class="num">'+MODE_NAME[m]+'</th>').join("")+'</tr></thead><tbody>';
+  ["v","g"].forEach(a=>{
+    h+='<tr class="grp"><th colspan="4">'+AREA_NAME[a]+'</th></tr>';
+    rows.filter(r=>r.d.area===a).forEach(r=>{h+='<tr><td>'+esc(r.d.title)+'</td>'+r.cells.map(x=>'<td class="num">'+x.ok+' / '+x.n+'<br><span class="small">'+x.first+' beim 1. Versuch</span></td>').join("")+'</tr>';});
+  });
+  h+='</tbody></table></div><p class="small">Gelöste Karten / Karten im Satz, darunter: beim ersten Versuch richtig.</p></section>';
+
+  h+='<section class="card"><h2>Offene Fehler</h2>';
+  if(!errs.length) h+='<p>Keine offenen Fehler. Hier erscheinen Karten, deren letzter Versuch falsch war.</p>';
+  else{
+    h+='<p>'+errs.length+(errs.length===1?" Karte, deren":" Karten, deren")+' letzter Versuch falsch war'+(errs.length>shown.length?" (die neuesten "+shown.length+")":"")+'.</p><ul class="errs">'+
+      shown.map((e,i)=>'<li><span class="small">'+esc(e.d.title)+' · '+MODE_NAME[e.m]+' · '+fmt(e.r.t)+'</span>'+
+        '<span>'+esc(e.c.q||e.c.a.replace(/\[.+?\]/g,"___"))+'</span>'+
+        '<span>Deine Antwort: <strong>'+esc(e.r.w||"–")+'</strong></span>'+
+        '<span>Richtig: <strong>'+esc(shownSolution(e.c))+'</strong></span>'+
+        '<button data-e="'+i+'">Fehler in diesem Kartensatz üben</button></li>').join("")+'</ul>';
+  }
+  h+='</section>';
+
+  h+='<section class="card"><h2>Verlauf sichern und einlesen</h2>'+
+    '<p>Der Verlauf liegt im Browser dieses Geräts. Sichere ihn als Datei, bevor du das Gerät oder den Browser wechselst oder Browserdaten löschst.</p>'+
+    '<div class="actions"><button id="exp-file" class="primary">Verlauf als Datei sichern</button><button id="exp-copy">Verlauf kopieren</button></div>'+
+    '<p class="small">Startet kein Download, nutze „Verlauf kopieren“ und füge den Text in eine Datei oder Notiz ein.</p>'+
+    '<p><label for="imp-file">Gesicherte Datei einlesen:</label><br><input type="file" id="imp-file" accept=".json,application/json"></p>'+
+    '<p><label for="imp-text">Oder kopierten Verlauf hier einfügen:</label></p><textarea id="imp-text" spellcheck="false"></textarea>'+
+    '<div class="actions"><button id="imp-go">Eingefügten Text einlesen</button></div>'+
+    '<p class="small">Beim Einlesen wird zusammengeführt: Pro Karte und Übungsart bleibt der Eintrag mit mehr Versuchen erhalten. Nichts wird überschrieben, was neuer ist.</p>'+
+    '<p class="fb" id="bk-msg" aria-live="polite">'+esc(st.msg)+'</p>'+
+    '<div class="actions"><button id="wipe" class="danger">'+(st.wipe?"Wirklich den ganzen Verlauf löschen?":"Verlauf löschen")+'</button>'+(st.wipe?'<button id="wipe-no">Abbrechen</button>':'')+'</div></section>';
+  $("stats").innerHTML=h;
+
+  $("stats").querySelectorAll("[data-e]").forEach(b=>b.onclick=()=>{
+    const e=shown[+b.dataset.e];
+    st.area=e.d.area; st.deck[e.d.area]=e.d.id; st.mode=e.m; st.filter="wrong"; st.pos[e.d.id]=0; st.view=null; st.screen="cards"; render();
+  });
+  const dump=()=>JSON.stringify({app:"c1-lernkarten",v:2,exported:new Date().toISOString(),h:H});
+  const say=m=>{st.msg=m;st.wipe=false;renderStats();};
+  $("exp-file").onclick=()=>{
+    try{
+      const a=document.createElement("a");
+      a.href=URL.createObjectURL(new Blob([dump()],{type:"application/json"}));
+      a.download="c1-verlauf-"+new Date().toISOString().slice(0,10)+".json";
+      document.body.appendChild(a); a.click(); a.remove();
+      say("Die Datei wurde zum Download angeboten.");
+    }catch(e){say("Der Download ist hier nicht möglich. Nutze „Verlauf kopieren“.");}
+  };
+  $("exp-copy").onclick=()=>{
+    try{navigator.clipboard.writeText(dump()).then(()=>say("Der Verlauf ist kopiert."),()=>say("Kopieren ist hier nicht möglich."));}
+    catch(e){say("Kopieren ist hier nicht möglich.");}
+  };
+  const take=txt=>{
+    let obj; try{obj=JSON.parse(txt);}catch(e){return say("Das ist keine gültige Verlaufsdatei.");}
+    if(!obj||typeof obj.h!=="object"||!obj.h) return say("Das ist keine gültige Verlaufsdatei.");
+    const r=mergeH(H,cleanH(obj.h)); st.view=null; save();
+    say(r.total+" Einträge gelesen, "+r.taken+" davon übernommen (neu oder mit mehr Versuchen).");
+  };
+  $("imp-file").onchange=e=>{const f=e.target.files&&e.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>take(String(rd.result));rd.onerror=()=>say("Die Datei konnte nicht gelesen werden.");rd.readAsText(f);};
+  $("imp-go").onclick=()=>{const t=$("imp-text").value.trim();if(t)take(t);else say("Füge zuerst den kopierten Verlauf in das Feld ein.");};
+  $("wipe").onclick=()=>{
+    if(!st.wipe){st.wipe=true;st.msg="";renderStats();return;}
+    H={}; st.view=null; save(); say("Der Verlauf ist gelöscht.");
+  };
+  if(st.wipe) $("wipe-no").onclick=()=>{st.wipe=false;renderStats();};
+}
+
+["v","g"].forEach(a=>$("area-"+a).onclick=()=>{st.screen="cards";st.area=a;render();});
+$("area-s").onclick=()=>{st.screen="stats";st.msg="";st.wipe=false;render();};
+MODES.forEach(m=>$("mode-"+m).onclick=()=>{st.mode=m;render();});
 $("deck").onchange=e=>{st.deck[st.area]=e.target.value;render();};
+$("filter").onchange=e=>{st.filter=e.target.value;st.pos[curDeck().id]=0;st.view=null;render();};
 $("prev").onclick=()=>{const d=curDeck();if(st.pos[d.id]>0){st.pos[d.id]--;render();}};
-$("next").onclick=()=>{const d=curDeck();if(st.pos[d.id]<list(d).length-1){st.pos[d.id]++;render();}};
-$("shuffle").onclick=()=>{const d=curDeck();st.order[d.id]=shuffled(st.order[d.id]);st.pos[d.id]=0;render();};
-$("restart").onclick=()=>{const d=curDeck();st.pos[d.id]=0;doneSet().clear();render();};
+$("next").onclick=()=>{const d=curDeck();if(st.pos[d.id]<viewList(d).length-1){st.pos[d.id]++;render();}};
+$("shuffle").onclick=()=>{const d=curDeck();st.order[d.id]=shuffled(st.order[d.id]||d.cards.map((_,i)=>i));st.pos[d.id]=0;st.view=null;render();};
+$("restart").onclick=()=>{const d=curDeck();st.pos[d.id]=0;st.view=null;render();};
 render();
 if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
 </script>

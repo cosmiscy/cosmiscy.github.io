@@ -1,6 +1,6 @@
 // Offline-Modus: Die App wird beim ersten Besuch gespeichert und danach im Hintergrund aktualisiert.
 // Nach einer Änderung an index.html die Versionsnummer erhöhen, damit alle Geräte die neue Fassung laden.
-const CACHE = "c1-lernkarten-v1";
+const CACHE = "c1-lernkarten-v3";
 const FILES = ["./", "index.html", "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png"];
 
 self.addEventListener("install", e => {
