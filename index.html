@@ -1,859 +1,736 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="de">
 <head>
 <meta charset="utf-8">
-<meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Cut Block Tracker</title>
+<title>C1 Lernkarten Deutsch</title>
+<meta name="description" content="Lernkarten für Deutsch C1: Wortschatz, Nomen-Verb-Verbindungen, Passiv und Präpositionen.">
+<meta name="theme-color" content="#0b6e6e">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bitter:wght@500;700&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
 <style>
-/* Layout idea: one-thumb gym logger. Sticky date header, stacked exercise cards with big set rows, bottom tab bar, rest timer above it. */
+/* Layout: eine schmale Spalte. Oben Bereich, Aufgabe und Übungsart, darunter eine Karte, darunter die Navigation. */
 :root{
-  --bg:#eef1f4; --surface:#ffffff; --ink:#15191e; --muted:#5d6874; --line:#d5dbe1;
-  --accent:#1f4fd1; --accent-ink:#ffffff; --accent-soft:#e3eafc;
-  --good:#18794e; --good-soft:#dcf2e6; --warn:#a15c07; --warn-soft:#fbeedb; --bad:#b42318;
-  --display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
-  --body:"Barlow",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
-  --r:12px;
-  color-scheme:light;
+  --bg:#eef2f6; --card:#ffffff; --ink:#18242f; --muted:#5b6b79; --line:#cfd8e1;
+  --accent:#0b6e6e; --accent-ink:#ffffff; --good:#1c7c3f; --good-bg:#e1f3e7; --bad:#b3261e; --bad-bg:#fbe6e4;
+  --display:"Bitter",Georgia,serif; --body:"Source Sans 3","Segoe UI",Arial,sans-serif;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
-    --bg:#0f1317; --surface:#181e24; --ink:#e8edf2; --muted:#98a5b2; --line:#2a333c;
-    --accent:#7d9dff; --accent-ink:#0b1020; --accent-soft:#1d2840;
-    --good:#4cc38a; --good-soft:#15301f; --warn:#f0b35a; --warn-soft:#33270f; --bad:#ff7b72;
     color-scheme:dark;
+    --bg:#111a22; --card:#1a2630; --ink:#e7edf2; --muted:#9fb0bd; --line:#33434f;
+    --accent:#4fc4c0; --accent-ink:#0c1a1a; --good:#7ddc9c; --good-bg:#173524; --bad:#ff9a90; --bad-bg:#40201d;
   }
 }
 :root[data-theme="dark"]{
-  --bg:#0f1317; --surface:#181e24; --ink:#e8edf2; --muted:#98a5b2; --line:#2a333c;
-  --accent:#7d9dff; --accent-ink:#0b1020; --accent-soft:#1d2840;
-  --good:#4cc38a; --good-soft:#15301f; --warn:#f0b35a; --warn-soft:#33270f; --bad:#ff7b72;
   color-scheme:dark;
+  --bg:#111a22; --card:#1a2630; --ink:#e7edf2; --muted:#9fb0bd; --line:#33434f;
+  --accent:#4fc4c0; --accent-ink:#0c1a1a; --good:#7ddc9c; --good-bg:#173524; --bad:#ff9a90; --bad-bg:#40201d;
 }
 *{box-sizing:border-box}
-html,body{height:100%;margin:0}
-body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.4;-webkit-text-size-adjust:100%}
-button,input,select,textarea{font:inherit;color:inherit}
-.num,.mono{font-variant-numeric:tabular-nums}
-h1,h2,h3{font-family:var(--display);font-weight:700;letter-spacing:.01em;margin:0;text-wrap:balance}
-h1{font-size:28px;line-height:1.1}
-h2{font-size:22px}
-h3{font-size:19px}
-.wrap{max-width:560px;margin:0 auto;padding:0 16px 150px}
-header.top{position:sticky;top:0;z-index:5;background:var(--bg);padding:12px 16px 10px;border-bottom:1px solid var(--line)}
-header.top .inner{max-width:560px;margin:0 auto;display:grid;gap:6px}
-.daterow{display:flex;align-items:center;gap:8px}
-.daterow h1{flex:1;text-align:center}
-.iconbtn{width:44px;height:44px;border-radius:10px;border:1px solid var(--line);background:var(--surface);display:grid;place-items:center;cursor:pointer;font-size:20px}
-.sub{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;align-items:center}
-.chip{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:999px;background:var(--surface);border:1px solid var(--line);font-size:13px;color:var(--muted);font-weight:500;white-space:nowrap}
-.chip.accent{background:var(--accent-soft);color:var(--accent);border-color:transparent}
-.chip.good{background:var(--good-soft);color:var(--good);border-color:transparent}
-.chip.warn{background:var(--warn-soft);color:var(--warn);border-color:transparent}
-.stack{display:grid;gap:12px;margin-top:14px}
-.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px}
-.card.done{border-color:var(--good)}
-.cardhead{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
-.label{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
-.meta{color:var(--muted);font-size:14px;margin-top:2px}
-.big{font-family:var(--display);font-size:26px;font-weight:700;white-space:nowrap}
-.sets{display:grid;gap:8px;margin-top:12px}
-.setrow{display:grid;grid-template-columns:28px 1fr auto 1fr 52px;align-items:center;gap:8px}
-.setrow .n{color:var(--muted);font-weight:600;text-align:center}
-.setrow .x{color:var(--muted)}
-.field{display:flex;align-items:center;border:1px solid var(--line);border-radius:10px;background:var(--bg);height:48px;padding:0 10px;gap:6px;min-width:0}
-.field input{border:0;background:transparent;width:100%;min-width:0;font-size:20px;font-weight:600;font-variant-numeric:tabular-nums;outline:none}
-.field span{color:var(--muted);font-size:13px}
-.field:focus-within{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
-.tick{height:48px;border-radius:10px;border:2px solid var(--line);background:var(--surface);cursor:pointer;font-size:22px;font-weight:700;color:var(--muted)}
-.tick.on{background:var(--good);border-color:var(--good);color:#fff}
-.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
-.row3{display:grid;grid-template-columns:110px 1fr;gap:8px;margin-top:10px}
-select,.txt{height:44px;border-radius:10px;border:1px solid var(--line);background:var(--bg);padding:0 10px;width:100%}
-textarea{width:100%;min-height:110px;border-radius:10px;border:1px solid var(--line);background:var(--bg);padding:10px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px}
-.note{font-size:14px;color:var(--muted);margin-top:8px}
-.banner{border-radius:10px;padding:10px 12px;font-size:14px;margin-top:10px}
-.banner.good{background:var(--good-soft);color:var(--good)}
-.banner.warn{background:var(--warn-soft);color:var(--warn)}
-.banner.info{background:var(--accent-soft);color:var(--accent)}
-.btn{height:44px;padding:0 16px;border-radius:10px;border:1px solid var(--line);background:var(--surface);cursor:pointer;font-weight:600}
-.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
-.btn.danger{color:var(--bad);border-color:var(--bad)}
-.btn.small{height:36px;padding:0 12px;font-size:14px}
-.btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
-nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
-nav.tabs .inner{max-width:560px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr)}
-nav.tabs a{display:grid;place-items:center;height:58px;text-decoration:none;color:var(--muted);font-weight:600;font-size:14px}
-nav.tabs a.on{color:var(--accent);box-shadow:inset 0 3px 0 var(--accent)}
-.timer{position:fixed;left:0;right:0;bottom:calc(58px + env(safe-area-inset-bottom));z-index:6;display:none}
-.timer.show{display:block}
-.timer .inner{max-width:560px;margin:0 auto 8px;padding:0 16px}
-.timer .box{display:flex;align-items:center;gap:10px;background:var(--ink);color:var(--bg);border-radius:12px;padding:8px 10px 8px 14px}
-.timer .t{font-family:var(--display);font-size:30px;font-weight:700;flex:1;font-variant-numeric:tabular-nums}
-.timer button{height:38px;border-radius:8px;border:0;padding:0 12px;font-weight:600;cursor:pointer;background:var(--bg);color:var(--ink)}
-.daylist{display:grid;gap:8px}
-.dayitem{display:grid;grid-template-columns:62px 1fr auto;gap:10px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px;cursor:pointer;text-align:left;width:100%}
-.dayitem.today{border-color:var(--accent)}
-.dayitem .d{font-family:var(--display);font-size:20px;font-weight:700;line-height:1}
-.dayitem .d small{display:block;font-family:var(--body);font-size:12px;color:var(--muted);font-weight:500}
-.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.tile{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:10px}
-.tile .v{font-family:var(--display);font-size:26px;font-weight:700;line-height:1.1}
-.tile .k{font-size:12px;color:var(--muted)}
-svg text{fill:var(--muted);font-family:var(--body);font-size:11px}
-.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:13px;color:var(--muted);margin-top:6px}
-.legend i{display:inline-block;width:12px;height:3px;border-radius:2px;margin-right:5px;vertical-align:middle}
-table.mx{width:100%;border-collapse:collapse;margin-top:8px}
-table.mx th{font-size:12px;color:var(--muted);text-align:left;font-weight:600;padding:4px}
-table.mx td{padding:4px}
-table.mx input{width:100%;height:40px;border-radius:8px;border:1px solid var(--line);background:var(--bg);padding:0 8px;font-variant-numeric:tabular-nums}
-.warmcard{background:var(--bg);border-style:dashed}
-.warmcard.done{border-style:solid}
-.wlist{display:grid;gap:6px;margin-top:8px}
-.wrow{display:grid;grid-template-columns:1fr 52px;align-items:center;gap:8px;font-size:17px}
-.tick.small{height:40px}
-.planbox{margin-top:12px;display:grid;gap:8px;border-top:1px solid var(--line);padding-top:12px}
-.planrow{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
-.xform{display:grid;gap:8px;margin-top:10px}
-.btn:disabled{opacity:.55;cursor:default}
-.empty{text-align:center;padding:30px 10px;color:var(--muted)}
-:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
-@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.5}
+main{max-width:760px;margin:0 auto;padding:24px 16px 48px;display:flex;flex-direction:column;gap:14px}
+h1{font-family:var(--display);font-size:1.6rem;margin:0;text-wrap:balance}
+.sub{color:var(--muted);margin:0}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.lbl{color:var(--muted);font-size:.9rem;min-width:5.5em}
+button,select,input{font:inherit;color:inherit;border-radius:8px;border:1px solid var(--line);background:var(--card);padding:8px 12px}
+button{cursor:pointer}
+select{flex:1;min-width:0;max-width:100%}
+input[type=text]{flex:1;min-width:200px}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+button:disabled{cursor:default;opacity:.55}
+.tab[aria-selected="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
+.bar{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;color:var(--muted);font-variant-numeric:tabular-nums}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:14px}
+.task{color:var(--muted);font-size:.95rem;margin:0}
+.sentence{font-family:var(--display);font-weight:500;font-size:1.2rem;line-height:1.55;margin:0}
+.gap{display:inline-block;min-width:4.5em;border-bottom:2px solid var(--accent);text-align:center;color:var(--accent);font-weight:700;padding:0 6px}
+.inf{color:var(--muted);font-family:var(--body);font-size:1rem}
+.words{display:flex;flex-wrap:wrap;gap:8px}
+.opts{display:flex;flex-direction:column;gap:8px}
+.opts button{text-align:left}
+.word.ok{background:var(--good-bg);border-color:var(--good);color:var(--good);font-weight:600}
+.word.no{background:var(--bad-bg);border-color:var(--bad);color:var(--bad);text-decoration:line-through}
+.line{min-height:56px;border:2px dashed var(--line);border-radius:10px;padding:8px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.line.ok{border-color:var(--good);background:var(--good-bg)}
+.line.no{border-color:var(--bad);background:var(--bad-bg)}
+.hint{color:var(--muted);font-size:.95rem;margin:0}
+.fb{min-height:1.5em;margin:0;font-weight:600}
+.fb.ok{color:var(--good)} .fb.no{color:var(--bad)}
+.after{border-left:4px solid var(--accent);padding:4px 0 4px 12px;display:flex;flex-direction:column;gap:6px}
+.after p{margin:0}
+.nouns{margin:0;padding-left:1.2em}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
+details summary{cursor:pointer;color:var(--muted)}
+details p{margin:8px 0 0}
 </style>
 </head>
 <body>
-<header class="top" id="top"></header>
-<main class="wrap" id="view"></main>
-<div class="timer" id="timer"><div class="inner"><div class="box"><span>Rest</span><span class="t" id="timerT">2:30</span><button type="button" id="tPlus">+30 s</button><button type="button" id="tSkip">Done</button></div></div></div>
-<nav class="tabs"><div class="inner">
-  <a href="#today" data-tab="today">Today</a>
-  <a href="#week" data-tab="week">Week</a>
-  <a href="#progress" data-tab="progress">Progress</a>
-  <a href="#setup" data-tab="setup">Setup</a>
-</div></nav>
+<main>
+  <header>
+    <h1>C1 Lernkarten Deutsch</h1>
+    <p class="sub">Wortschatz und Grammatik aus deinen Kursaufgaben</p>
+  </header>
+
+  <div class="tabs" role="tablist" aria-label="Bereich">
+    <span class="lbl">Bereich</span>
+    <button class="tab" id="area-v" role="tab">Wortschatz</button>
+    <button class="tab" id="area-g" role="tab">Grammatik</button>
+  </div>
+  <div class="tabs">
+    <label class="lbl" for="deck">Aufgabe</label>
+    <select id="deck"></select>
+  </div>
+  <div class="tabs" role="tablist" aria-label="Übungsart">
+    <span class="lbl">Übungsart</span>
+    <button class="tab" id="mode-write" role="tab">Schreiben</button>
+    <button class="tab" id="mode-order" role="tab">Satz ordnen</button>
+    <button class="tab" id="mode-choose" role="tab">Auswählen</button>
+  </div>
+
+  <div class="bar"><span id="progress"></span><span id="score"></span></div>
+  <section class="card" id="card"></section>
+  <div class="actions">
+    <button id="prev">Zurück</button>
+    <button id="next" class="primary">Nächste Karte</button>
+    <button id="shuffle">Karten mischen</button>
+    <button id="restart">Neu beginnen</button>
+  </div>
+  <p class="hint" id="src"></p>
+</main>
 
 <script>
-(function(){
-"use strict";
+/* ---------- Daten ----------
+   [..] markiert, was in die Lücke gehört.
+   V = Wortschatzkarte, G = Grammatik-Lücke, T = Umformung (q = Vorgabe, a = Lösung).
+   w = falsches Partizip für die Auswahl, alt = weitere richtige Lösungen, n = Hinweis nach dem Lösen. */
+const V=(a,d,o)=>Object.assign({a,d},o||{});
+const G=(a,inf,w,o)=>Object.assign({a,inf,w},o||{});
+const T=(q,a,w,o)=>Object.assign({q,a,w},o||{});
 
-/* ---------------- Plan definition (from the 12-week plan) ---------------- */
-const LIFTS={squat:"Back squat",bench:"Bench press",deadlift:"Deadlift",front:"Front squat",incline:"Smith incline press",ohp:"Overhead press"};
-const ACC=[
- {k:"mrow",name:"Single-arm machine row",s:"A",sets:3,reps:"8–10 per side",start:80},
- {k:"curl",name:"Leg curl",s:"A",sets:3,reps:"10–12",start:30},
- {k:"lpress",name:"Leg press",s:"A",sets:2,reps:"10–12",start:140},
- {k:"pulldown",name:"Lat pulldown",s:"B",sets:3,reps:"8–10",start:60},
- {k:"legext",name:"Leg extension",s:"B",sets:2,reps:"10–12",start:75},
- {k:"cgpress",name:"Close-grip chest press machine",s:"B",sets:2,reps:"8–10",start:75},
- {k:"kneeraise",name:"Hanging knee raise",s:"B",sets:2,reps:"10–15",start:0}
+const BANK=["verspottet","Adieu","wesentlich","flossen","niedergelassen","belächelt","Prachtbauten","niederschmetternde","ausgebaut","Vergeudung","weit","Fürsprecher","erklärt","jeher","Eintrag","hinterließen","Wendepunkte","Entsetzen","in erster Linie","punkten","Vorzüge","ins rechte Licht rücken","verkündete","anfangs","lästerte","Platzhalter","Schnittpunkt"];
+
+const DECKS=[
+{id:"bonn",area:"v",kind:"vocab",own:true,title:"Bonn – Lückentext",task:"Welches Wort aus dem Schüttelkasten passt?",src:"Kursmaterial „Bonn“",cards:[
+ V("Zwei entscheidende [Wendepunkte] verhalfen der kleinen Stadt am Rhein zu einer einzigartigen Geschichte.",["Vorzüge","Prachtbauten"],{n:"der Wendepunkt, Plural: die Wendepunkte"}),
+ V("1991 beschloss die Regierung zum [Entsetzen] der Bonner den Umzug nach Berlin.",["Eintrag","Vergeudung"],{n:"das Entsetzen (ohne Plural)"}),
+ V("… eine provisorische Hauptstadt – ein [Platzhalter], in dem nur so lange regiert werden sollte, bis …",["Schnittpunkt","Fürsprecher"],{n:"der Platzhalter, Plural: die Platzhalter"}),
+ V("Frankfurt, das sich schon seit [jeher] als heimliche Hauptstadt fühlte, …",["anfangs","weit"],{n:"seit jeher = schon immer"}),
+ V("… mit der günstigen Lage am [Schnittpunkt] der westlichen Besatzungszonen …",["Platzhalter","Wendepunkte"],{n:"der Schnittpunkt, Plural: die Schnittpunkte"}),
+ V("Frankfurt, das … mit seiner Infrastruktur sowie der günstigen Lage … [punkten] konnte, galt als Favorit.",["ins rechte Licht rücken","ausgebaut"],{n:"mit etwas (Dativ) punkten"}),
+ V("… hatte die Stadt vor allem ihrem [Fürsprecher] Konrad Adenauer zu verdanken.",["Platzhalter","Eintrag"],{n:"der Fürsprecher, Plural: die Fürsprecher"}),
+ V("„Bonn ist halb so groß wie der Zentralfriedhof von Chicago, aber doppelt so tot“, [lästerte] der Schriftsteller John le Carré.",["punkten","flossen"],{n:"lästern über + Akkusativ"}),
+ V("Auch im Inland wurde das „Bundesdorf“ lange Zeit [belächelt] und verspottet.",["ausgebaut","niedergelassen"],{alt:["verspottet"],n:"belächeln + Akkusativ. Auch „verspottet“ passt hier."}),
+ V("Auch im Inland wurde das „Bundesdorf“ lange Zeit belächelt und [verspottet].",["erklärt","ausgebaut"],{alt:["belächelt"],noOrder:true,n:"verspotten + Akkusativ. Auch „belächelt“ passt hier."}),
+ V("Ungeachtet dessen wurde die Stadt als Regierungssitz [ausgebaut].",["niedergelassen","hinterließen"],{n:"ausbauen, baute aus, hat ausgebaut"}),
+ V("… nutzte die Regierung aber auch die vorhandenen [Prachtbauten] wie die Villa Hammerschmidt.",["Wendepunkte","Platzhalter"],{n:"der Prachtbau, Plural: die Prachtbauten"}),
+ V("Bei den Bonnern sorgten vor allem die [anfangs] noch ungewohnten Staatsbesuche für Aufsehen.",["jeher","wesentlich"],{n:"anfangs = am Anfang"}),
+ V("Wenn die Politprominenz zum [Eintrag] ins Goldene Buch im Alten Rathaus gebeten wurde, …",["Entsetzen","Schnittpunkt"],{n:"der Eintrag, Plural: die Einträge"}),
+ V("Eindruck bei der Bevölkerung [hinterließen] aber auch die Großdemonstrationen.",["flossen","verkündete"],{n:"Eindruck hinterlassen, hinterließ, hat hinterlassen"}),
+ V("Jahrzehntelang wurde die Stadt Bonn im In- und Ausland [in erster Linie] als Regierungssitz wahrgenommen.",["jeher","weit"],{n:"die Linie; in erster Linie = vor allem"}),
+ V("… dass Bonn seine [Vorzüge] als historisch gewachsene Stadt … ins rechte Licht rücken konnte.",["Wendepunkte","Eintrag"],{noOrder:true,n:"der Vorzug, Plural: die Vorzüge"}),
+ V("… dass Bonn seine Vorzüge als historisch gewachsene Stadt mit internationalem Flair [ins rechte Licht rücken] konnte.",["punkten","hinterließen"],{n:"das Licht; etwas ins rechte Licht rücken = etwas vorteilhaft darstellen"}),
+ V("Am 20. Juni 1991 kurz vor 22 Uhr [verkündete] Bundestagspräsidentin Rita Süssmuth das Abstimmungsergebnis.",["lästerte","hinterließen"],{n:"verkünden + Akkusativ"}),
+ V("… das für Bonn [niederschmetternde] Abstimmungsergebnis des Bundestages.",["niedergelassen","wesentlich"],{n:"niederschmetternd = sehr enttäuschend"}),
+ V("Allen Protesten gegen die [Vergeudung] von Steuergeldern zum Trotz zieht die Regierung nach Berlin.",["Entsetzen","Eintrag"],{n:"die Vergeudung (meist ohne Plural)"}),
+ V("In der Sommerpause 1999 war es dann so [weit].",["jeher","anfangs"],{n:"es ist so weit = der Zeitpunkt ist gekommen"}),
+ V("… und die Regierung sagte Bonn [Adieu].",["Entsetzen","weit"],{n:"das Adieu; jemandem Adieu sagen"}),
+ V("1994 wurde das Bonn-Berlin-Gesetz beschlossen und Bonn zur „Bundesstadt“ [erklärt].",["niedergelassen","belächelt"],{n:"jemanden/etwas zu etwas (Dativ) erklären"}),
+ V("… dazu haben auch die Ausgleichsgelder von 1,43 Milliarden Euro [wesentlich] beigetragen.",["weit","jeher"],{n:"wesentlich zu etwas beitragen"}),
+ V("51 Millionen Euro [flossen] in den Kulturbereich.",["hinterließen","punkten"],{n:"fließen, floss, ist geflossen"}),
+ V("… dass sich mit der Telekom und der Post gleich zwei Global Player [niedergelassen] haben.",["ausgebaut","verspottet"],{n:"sich niederlassen, ließ sich nieder, hat sich niedergelassen"})
+]},
+
+{id:"nvv1",area:"v",kind:"vocab",own:true,hint:"Bedeutung",title:"Nomen-Verb-Verbindungen – aus den Kurstexten",task:"Welches Verb gehört zu dem Nomen?",src:"Sätze aus deinen Kurstexten (Bonn, Universitätsbibliothek, Passiv-Arbeitsblätter), teilweise gekürzt",cards:[
+ V("Außerdem sind zusätzliche Sicherheitsmaßnahmen [ergriffen] worden.",["genommen","gezogen"],{inf:"= etwas unternehmen",n:"Maßnahmen ergreifen (ergriff, hat ergriffen)"}),
+ V("In den vergangenen drei Jahren sind zahlreiche bauliche Veränderungen [vorgenommen] worden.",["aufgenommen","vorgelegt"],{inf:"= etwas verändern",n:"Veränderungen vornehmen"}),
+ V("Im vergangenen Jahr sind neue Richtlinien [verabschiedet] worden.",["verabredet","abgeschlossen"],{inf:"= offiziell beschließen",n:"Richtlinien / ein Gesetz verabschieden"}),
+ V("Die Universitätsleitung [zieht] eine positive Bilanz.",["macht","nimmt"],{inf:"= das Ergebnis bewerten",n:"Bilanz ziehen (zog, hat gezogen)"}),
+ V("Die zur Verfügung [stehenden] finanziellen Mittel sind effizient eingesetzt worden.",["stellenden","liegenden"],{inf:"= vorhanden sein",n:"zur Verfügung stehen = vorhanden sein; zur Verfügung stellen = bereitstellen"}),
+ V("Besondere Aufmerksamkeit [galt] der Sicherung wertvoller historischer Bestände.",["gab","nahm"],{inf:"= man achtete besonders auf",n:"die Aufmerksamkeit gilt + Dativ (gelten, galt, hat gegolten)"}),
+ V("Eindruck bei der Bevölkerung [hinterließen] aber auch die Großdemonstrationen.",["hinterlegten","überließen"],{inf:"= beeindrucken",n:"Eindruck hinterlassen bei + Dativ"}),
+ V("Bei den Bonnern [sorgten] die Staatsbesuche für Aufsehen.",["machten","führten"],{inf:"= Aufmerksamkeit erregen",n:"für Aufsehen sorgen"}),
+ V("Bonn konnte seine Vorzüge ins rechte Licht [rücken].",["ziehen","legen"],{inf:"= vorteilhaft darstellen",n:"etwas ins rechte Licht rücken"}),
+ V("Mit dem Fall der Mauer wurden die Weichen für den Wegzug der Regierung [gestellt].",["gelegt","gesetzt"],{inf:"= eine Entwicklung vorbereiten",n:"die Weichen stellen für + Akkusativ"}),
+ V("Bonn hat sich einen Namen als erste UN-Stadt Deutschlands [gemacht].",["gegeben","genommen"],{inf:"= bekannt werden",n:"sich einen Namen machen als + Nominativ"}),
+ V("1999 [sagte] die Regierung Bonn Adieu.",["gab","machte"],{inf:"= sich verabschieden",n:"jemandem Adieu sagen"}),
+ V("Adenauer hatte sich für Bonn stark [gemacht].",["gestellt","gehalten"],{inf:"= sich einsetzen",n:"sich stark machen für + Akkusativ"}),
+ V("Die Telekom und die Post haben viele Tausend Arbeitsplätze [geschaffen].",["geschafft","getroffen"],{inf:"= neue Stellen entstehen lassen",n:"Arbeitsplätze schaffen (schuf, hat geschaffen). Aber: etwas schaffen (schaffte, hat geschafft) = etwas erreichen"}),
+ V("Rund 150 international tätige Institutionen [haben] in Bonn ihren Sitz.",["machen","stehen"],{inf:"= ansässig sein",n:"seinen Sitz haben in + Dativ"}),
+ V("Dass Bonn Hauptstadt wurde, hatte die Stadt Konrad Adenauer zu [verdanken].",["bedanken","gedenken"],{inf:"= es lag an ihm",n:"jemandem etwas zu verdanken haben"}),
+ V("Nach Streikende wurden die Tarifverhandlungen erneut [aufgenommen].",["angenommen","eingenommen"],{inf:"= beginnen",n:"Verhandlungen aufnehmen"}),
+ V("Es wurden keine weiteren Untersuchungen [durchgeführt].",["aufgeführt","eingeführt"],{inf:"= untersuchen",n:"eine Untersuchung durchführen"}),
+ V("Es wurden zu diesem Fall keine weiteren Beweise [vorgelegt].",["vorgestellt","aufgelegt"],{inf:"= präsentieren",n:"Beweise vorlegen"}),
+ V("Wegen der Kälte wurde der Schiffsverkehr teilweise [eingestellt].",["abgestellt","ausgestellt"],{inf:"= stoppen",n:"den Verkehr / die Arbeit einstellen"}),
+ V("Die ursprünglich vorgesehenen Maßnahmen sind weitgehend [umgesetzt].",["übersetzt","versetzt"],{inf:"= verwirklichen",n:"Maßnahmen / einen Plan umsetzen"}),
+ V("Einige kleinere technische Probleme sind erst vor wenigen Tagen [behoben] worden.",["aufgehoben","erhoben"],{inf:"= beseitigen",n:"ein Problem / einen Fehler beheben (behob, hat behoben)"}),
+ V("Die wesentlichen Ziele des Projekts sind mittlerweile [erreicht].",["gereicht","gelangt"],{inf:"= schaffen",n:"ein Ziel erreichen"})
+]},
+
+{id:"nvv2",area:"v",kind:"vocab",own:true,hint:"Bedeutung",title:"Nomen-Verb-Verbindungen – neue Sätze",task:"Welches Verb gehört zu dem Nomen?",src:"neu entworfene Sätze von Claude",cards:[
+ V("Der Stadtrat muss bis Freitag eine Entscheidung [treffen].",["machen","nehmen"],{inf:"= entscheiden",n:"eine Entscheidung treffen (traf, hat getroffen)"}),
+ V("Für diese Stelle [kommen] nur Bewerber mit Berufserfahrung in Frage.",["gehen","treten"],{inf:"= möglich sein",n:"in Frage kommen"}),
+ V("Die Universität [stellt] den Studierenden kostenlose Laptops zur Verfügung.",["steht","gibt"],{inf:"= bereitstellen",n:"jemandem etwas zur Verfügung stellen"}),
+ V("Viele Bürger [nehmen] das Beratungsangebot in Anspruch.",["bringen","stellen"],{inf:"= nutzen",n:"etwas in Anspruch nehmen"}),
+ V("Die Opposition [übte] scharfe Kritik an dem Gesetz.",["machte","gab"],{inf:"= kritisieren",n:"Kritik üben an + Dativ"}),
+ V("Wer Wohngeld bekommen möchte, muss einen Antrag [stellen].",["legen","setzen"],{inf:"= beantragen",n:"einen Antrag stellen auf + Akkusativ"}),
+ V("Autofahrer sollten auf Radfahrer Rücksicht [nehmen].",["geben","halten"],{inf:"= rücksichtsvoll sein",n:"Rücksicht nehmen auf + Akkusativ"}),
+ V("Die Firma [zieht] einen Umzug ins Ausland in Betracht.",["nimmt","bringt"],{inf:"= als Möglichkeit überlegen",n:"etwas in Betracht ziehen"}),
+ V("In ihrer Rede [brachte] die Ministerin ihre Sorge zum Ausdruck.",["stellte","führte"],{inf:"= ausdrücken",n:"etwas zum Ausdruck bringen"}),
+ V("Das neue Gesetz [tritt] am 1. Januar in Kraft.",["geht","kommt"],{inf:"= gültig werden",n:"in Kraft treten (trat, ist getreten)"}),
+ V("Viele Pflegekräfte [stehen] ständig unter Druck.",["sitzen","liegen"],{inf:"= gestresst sein",n:"unter Druck stehen; jemanden unter Druck setzen"}),
+ V("Jeder kann einen Beitrag zum Klimaschutz [leisten].",["treffen","führen"],{inf:"= beitragen",n:"einen Beitrag leisten zu + Dativ"}),
+ V("In seinem Schreiben [nimmt] der Anwalt Bezug auf den Vertrag.",["macht","stellt"],{inf:"= sich beziehen",n:"Bezug nehmen auf + Akkusativ"}),
+ V("Die Regierung hat den Bericht zur Kenntnis [genommen].",["gezogen","gestellt"],{inf:"= registrieren",n:"etwas zur Kenntnis nehmen"}),
+ V("Soziale Medien [spielen] im Wahlkampf eine große Rolle.",["machen","haben"],{inf:"= wichtig sein",n:"eine Rolle spielen"}),
+ V("Der Minister wollte zu den Vorwürfen keine Stellung [nehmen].",["geben","machen"],{inf:"= seine Meinung äußern",n:"Stellung nehmen zu + Dativ"}),
+ V("Eltern [üben] großen Einfluss auf ihre Kinder aus.",["machen","führen"],{inf:"= beeinflussen",n:"Einfluss ausüben / nehmen auf + Akkusativ"}),
+ V("In der Sitzung wurde auch das Thema Überstunden zur Sprache [gebracht].",["gestellt","genommen"],{inf:"= ansprechen",n:"etwas zur Sprache bringen; zur Sprache kommen"}),
+ V("Für die niedrige Miete [nimmt] sie den langen Arbeitsweg in Kauf.",["zieht","bringt"],{inf:"= einen Nachteil akzeptieren",n:"etwas in Kauf nehmen"}),
+ V("Als Abteilungsleiterin [trägt] sie die Verantwortung für zwanzig Mitarbeiter.",["macht","führt"],{inf:"= verantwortlich sein",n:"Verantwortung tragen / übernehmen für + Akkusativ"}),
+ V("Der Vorschlag [steht] morgen im Stadtrat zur Diskussion.",["geht","liegt"],{inf:"= diskutiert werden",n:"zur Diskussion stehen; etwas zur Diskussion stellen"}),
+ V("Viele alte Bräuche sind in Vergessenheit [geraten].",["getreten","gegangen"],{inf:"= vergessen werden",n:"in Vergessenheit geraten (geriet, ist geraten)"}),
+ V("Die Bevölkerung [leistete] Widerstand gegen den Bau der Autobahn.",["machte","gab"],{inf:"= sich wehren",n:"Widerstand leisten gegen + Akkusativ"}),
+ V("Für das Stadtfest werden schon jetzt Vorbereitungen [getroffen].",["genommen","gestellt"],{inf:"= vorbereiten",n:"Vorbereitungen treffen für + Akkusativ"}),
+ V("Die Chefin möchte mit jedem Mitarbeiter ein Gespräch [führen].",["machen","halten"],{inf:"= sprechen",n:"ein Gespräch führen mit + Dativ. Aber: eine Rede halten"}),
+ V("Der Streik [hatte] zahlreiche Zugausfälle zur Folge.",["nahm","brachte"],{inf:"= verursachen",n:"etwas zur Folge haben"}),
+ V("Bei der Planung wurden die Kosten völlig außer Acht [gelassen].",["genommen","gestellt"],{inf:"= nicht beachten",n:"etwas außer Acht lassen"}),
+ V("Im Praktikum konnte er sein Können unter Beweis [stellen].",["bringen","setzen"],{inf:"= beweisen",n:"etwas unter Beweis stellen"}),
+ V("Nach zwanzig Jahren [nahm] der Trainer Abschied von seinem Verein.",["machte","gab"],{inf:"= sich verabschieden",n:"Abschied nehmen von + Dativ"}),
+ V("Ihr Wunsch nach einem eigenen Garten ist endlich in Erfüllung [gegangen].",["gekommen","getreten"],{inf:"= wahr werden",n:"in Erfüllung gehen"}),
+ V("Die Studie [fand] in der Fachwelt große Anerkennung.",["nahm","traf"],{inf:"= anerkannt werden",n:"Anerkennung finden"}),
+ V("Der Bürgermeister [gab] den Anwohnern rechtzeitig Bescheid.",["machte","stellte"],{inf:"= informieren",n:"jemandem Bescheid geben / sagen"})
+]},
+
+{id:"zv",area:"g",kind:"zv",title:"Zustandspassiv oder Vorgangspassiv Perfekt – Universitätsbibliothek",task:"Zustandspassiv Präsens (ist/sind + Partizip II) oder Vorgangspassiv Perfekt (ist/sind + Partizip II + worden)?",src:"Arbeitsblatt „Die Modernisierung einer Universitätsbibliothek“, Lösungen vom Arbeitsblatt",cards:[
+ G("In den vergangenen drei Jahren [sind] zahlreiche bauliche Veränderungen [vorgenommen worden].","vornehmen"),
+ G("Die historischen Lesesäle [sind] inzwischen vollständig [restauriert].","restaurieren"),
+ G("Im Zuge der Modernisierung [sind] mehrere Millionen Euro in die digitale Infrastruktur [investiert worden].","investieren"),
+ G("Sämtliche Arbeitsplätze [sind] mittlerweile mit modernen Computern [ausgestattet].","ausstatten"),
+ G("Darüber hinaus [ist] ein neues elektronisches Ausleihsystem [eingeführt worden].","einführen"),
+ G("In den vergangenen Monaten [sind] Tausende alter Handschriften digital [erfasst worden].","erfassen"),
+ G("Die wichtigsten Dokumente [sind] inzwischen vollständig [digitalisiert].","digitalisieren"),
+ G("Während der Bauarbeiten [sind] mehrere bislang unbekannte Schäden an der Gebäudesubstanz [entdeckt worden].","entdecken"),
+ G("Die betroffenen Bereiche [sind] inzwischen fachgerecht [saniert].","sanieren"),
+ G("Außerdem [sind] zusätzliche Sicherheitsmaßnahmen [ergriffen worden].","ergreifen"),
+ G("Im vergangenen Jahr [sind] neue Richtlinien für die Nutzung der Bibliothek [verabschiedet worden].","verabschieden"),
+ G("Die Zugangsbedingungen [sind] heute klar [geregelt].","regeln"),
+ G("Sämtliche Mitarbeiter [sind] über die neuen Vorschriften [informiert].","informieren"),
+ G("Die ursprünglich vorgesehenen Maßnahmen [sind] weitgehend [umgesetzt].","umsetzen"),
+ G("Einige kleinere technische Probleme [sind] allerdings erst vor wenigen Tagen [behoben worden].","beheben"),
+ G("Die zur Verfügung stehenden finanziellen Mittel [sind] effizient [eingesetzt worden].","einsetzen"),
+ G("Die wesentlichen Ziele des Projekts [sind] mittlerweile [erreicht].","erreichen"),
+ G("In einer kürzlich veröffentlichten Pressemitteilung [ist] außerdem [betont worden].","betonen")
+]},
+
+{id:"pr1",area:"g",title:"Passiv Präsens – Aufgabe 1 (ohne Täter)",task:"Forme den Aktivsatz in einen Passivsatz um.",src:"mein-deutschbuch.de, „Das Passiv“, Lösungen vom Arbeitsblatt",cards:[
+ T("Der Auszubildende repariert das Auto.","Das Auto wird repariert.","gerepariert"),
+ T("Michaela fragt die Lehrerin.","Die Lehrerin wird gefragt.","gefragen"),
+ T("Das Haus verkauft Klaus Schlömer nicht.","Das Haus wird nicht verkauft.","geverkauft"),
+ T("Nicole kauft Milch.","Milch wird gekauft.","gekaufen"),
+ T("Egon macht die Hausaufgaben.","Die Hausaufgaben werden gemacht.","gemachen"),
+ T("Die Fenster putzt die Hausfrau heute nicht.","Die Fenster werden heute nicht geputzt.","geputzen"),
+ T("Der Hausmeister öffnet alle Türen.","Alle Türen werden geöffnet.","geöffnen"),
+ T("Die Fenster schließt seine Frau.","Die Fenster werden geschlossen.","geschließt"),
+ T("Nudeln essen meine Kinder gern.","Nudeln werden gern gegessen.","geesst"),
+ T("Bier trinken die Kinder nicht.","Bier wird nicht getrunken.","getrinkt"),
+ T("Die Fische füttert Michaela um 5 Uhr.","Die Fische werden um 5 Uhr gefüttert.","gefüttern"),
+ T("Ralf wäscht im Hof den Wagen.","Der Wagen wird im Hof gewaschen.","gewascht"),
+ T("Die Mädchen lieben den Sänger.","Der Sänger wird geliebt.","gelieben"),
+ T("Ich liebe dich.","Du wirst geliebt.","gelieben"),
+ T("Liebst du mich auch?","Werde ich auch geliebt?","gelieben"),
+ T("Umarmt er dich im Kino?","Wirst du im Kino umarmt?","geumarmt"),
+ T("Küsst sie ihn leidenschaftlich?","Wird er leidenschaftlich geküsst?","geküssen"),
+ T("Fürchten sie euch?","Werdet ihr gefürchtet?","gefürchten"),
+ T("Fürchtet ihr ihn auch?","Wird er auch gefürchtet?","gefürchten"),
+ T("Ich sehe dich.","Du wirst gesehen.","geseht"),
+ T("Brauchen Sie uns heute noch?","Werden wir heute noch gebraucht?","gebrauchen"),
+ T("Wäscht deine Mutter dich?","Wirst du gewaschen?","gewascht"),
+ T("Wäschst du ihn jeden Tag?","Wird er jeden Tag gewaschen?","gewascht"),
+ T("Hörst du sie (die Kinder!) nicht?","Werden sie nicht gehört?","gehören"),
+ T("Der Maler zeichnet euch vor der Burg.","Ihr werdet vor der Burg gezeichnet.","gezeichnen"),
+ T("Morgen fotografiert uns der Fotograf.","Wir werden morgen fotografiert.","gefotografiert",{alt:["Morgen werden wir fotografiert."]}),
+ T("Welche Sprachen sprechen Sie?","Welche Sprachen werden gesprochen?","gesprecht"),
+ T("Fragt ihr ihn nach dem Weg?","Wird er nach dem Weg gefragt?","gefragen"),
+ T("Die Polizei befragt Sie auch.","Sie werden auch befragt.","gebefragt",{x:"Sie werdet auch befragt."})
+]},
+
+{id:"pr2",area:"g",title:"Passiv Präsens – Aufgabe 2 (mit Täter: von + Dativ)",task:"Forme den Aktivsatz in einen Passivsatz um. Nenne den Täter mit „von“.",src:"mein-deutschbuch.de, „Das Passiv“, Lösungen vom Arbeitsblatt",cards:[
+ T("Meine Sekretärin informiert mich.","Ich werde von meiner Sekretärin informiert.","geinformiert"),
+ T("Diese Rechnung bezahlt meine Firma.","Diese Rechnung wird von meiner Firma bezahlt.","gebezahlt"),
+ T("Mein Kollege gibt den Schlüssel ab.","Der Schlüssel wird von meinem Kollegen abgegeben.","abgegebt"),
+ T("Morgen bringt er meine Leiter zurück.","Morgen wird meine Leiter von ihm zurückgebracht.","zurückgebringt",{alt:["Meine Leiter wird morgen von ihm zurückgebracht."]}),
+ T("Im Keller macht er das Licht aus.","Im Keller wird das Licht von ihm ausgemacht.","ausgemachen",{alt:["Das Licht wird im Keller von ihm ausgemacht.","Das Licht wird von ihm im Keller ausgemacht."]}),
+ T("Die Heizung dreht unser Vater oft ab.","Die Heizung wird oft von unserem Vater abgedreht.","abgedrehen",{alt:["Die Heizung wird von unserem Vater oft abgedreht."]}),
+ T("Unsere Freunde streichen das Haus an.","Das Haus wird von unseren Freunden angestrichen.","angestreicht",{alt:["Das Haus wird von unseren Freunden gestrichen."],n:"Das Arbeitsblatt nennt als Lösung „gestrichen“. Das Partizip II von „anstreichen“ ist „angestrichen“; beides wird hier akzeptiert."}),
+ T("Unser Auto lackiert ein Lackierer.","Unser Auto wird von einem Lackierer lackiert.","gelackiert"),
+ T("Die Blumen gießt meine Nachbarin.","Die Blumen werden von meiner Nachbarin gegossen.","gegießt"),
+ T("Die Katzen füttert meine Schwester.","Die Katzen werden von meiner Schwester gefüttert.","gefüttern"),
+ T("Mein Bruder leert den Mülleimer aus.","Der Mülleimer wird von meinem Bruder ausgeleert.","ausgeleeren"),
+ T("Das Altpapier wirft mein Sohn weg.","Das Altpapier wird von meinem Sohn weggeworfen.","weggewerft"),
+ T("Meine Tochter schließt die Tür ab.","Die Tür wird von meiner Tochter abgeschlossen.","abgeschließt"),
+ T("Sie lüftet auch die Wohnung.","Die Wohnung wird auch von ihr gelüftet.","gelüften"),
+ T("Die Wäsche hängt Maike auf.","Die Wäsche wird von Maike aufgehängt.","aufgehangen"),
+ T("Die Schuhe putzt meine Frau.","Die Schuhe werden von meiner Frau geputzt.","geputzen"),
+ T("Mein Zimmer räumt sie auch auf.","Mein Zimmer wird auch von ihr aufgeräumt.","aufgeräumen"),
+ T("Mein Sohn macht die Aufgaben nicht.","Die Aufgaben werden von meinem Sohn nicht gemacht.","gemachen",{alt:["Die Aufgaben werden nicht von meinem Sohn gemacht."]}),
+ T("Sie macht seine Schwester. (Sie = die Aufgaben)","Sie werden von seiner Schwester gemacht.","gemachen",{x:"Sie werdet von seiner Schwester gemacht."}),
+ T("Sie bringt ihn auch immer ins Bett.","Er wird auch immer von ihr ins Bett gebracht.","gebringt",{alt:["Er wird auch von ihr ins Bett gebracht.","Er wird von ihr auch immer ins Bett gebracht."]}),
+ T("Am Wochenende schlafen wir aus.","Am Wochenende wird ausgeschlafen.","ausgeschlaft",{n:"Unpersönliches Passiv: Das Arbeitsblatt lässt den Täter hier weg."}),
+ T("Manchmal weckt mich mein Sohn.","Manchmal werde ich von meinem Sohn geweckt.","gewecken",{alt:["Ich werde manchmal von meinem Sohn geweckt."]}),
+ T("Oft springt er auf dem Bett umher.","Oft wird von ihm auf dem Bett umhergesprungen.","umhergespringt",{n:"Unpersönliches Passiv: „springen“ hat kein Akkusativobjekt."}),
+ T("Meine Kinder ärgern mich selten.","Ich werde selten von meinen Kindern geärgert.","geärgern",{alt:["Ich werde von meinen Kindern selten geärgert."]}),
+ T("Petra bringt den Kaffee ans Bett.","Der Kaffee wird von Petra ans Bett gebracht.","gebringt"),
+ T("Die Kinder machen das Frühstück.","Das Frühstück wird von den Kindern gemacht.","gemachen"),
+ T("Die Eltern räumen den Tisch ab.","Der Tisch wird von den Eltern abgeräumt.","abgeräumen"),
+ T("Meine Tochter spült das Geschirr ab.","Das Geschirr wird von meiner Tochter abgespült.","abgespülen"),
+ T("Mein Sohn schaltet den Fernseher ein.","Der Fernseher wird von meinem Sohn eingeschaltet.","eingeschalten")
+]},
+
+{id:"pt1",area:"g",title:"Passiv Präteritum – Aufgabe 1 (Aktiv → Passiv)",task:"Bilde aus dem Aktivsatz das Passiv Präteritum.",src:"mein-deutschbuch.de, „Das Passiv im Präteritum“, Lösungen vom Arbeitsblatt",cards:[
+ T("Der Dieb bringt das Geld zurück.","Das Geld wurde zurückgebracht.","zurückgebringt",{n:"Präteritum Aktiv: Der Dieb brachte das Geld zurück."}),
+ T("Der Bürgermeister begrüßt den Präsidenten.","Der Präsident wurde begrüßt.","gebegrüßt",{n:"Präteritum Aktiv: Der Bürgermeister begrüßte den Präsidenten."}),
+ T("Jemand stiehlt mein Auto.","Mein Auto wurde gestohlen.","gestehlt",{n:"Präteritum Aktiv: Jemand stahl mein Auto."}),
+ T("Der Hund beißt den Postboten.","Der Postbote wurde gebissen.","gebeißt",{n:"Präteritum Aktiv: Der Hund biss den Postboten."}),
+ T("Die Gäste bringen Geschenke mit.","Geschenke wurden mitgebracht.","mitgebringt",{alt:["Es wurden Geschenke mitgebracht."],n:"Präteritum Aktiv: Die Gäste brachten Geschenke mit."}),
+ T("Die Polizei fängt die Diebe nicht.","Die Diebe wurden nicht gefangen.","gefangt",{n:"Präteritum Aktiv: Die Polizei fing die Diebe nicht."}),
+ T("Der Butler gießt den Tee auf.","Der Tee wurde aufgegossen.","aufgegießt",{n:"Präteritum Aktiv: Der Butler goss den Tee auf."}),
+ T("Der Hausmann hängt die Wäsche auf.","Die Wäsche wurde aufgehängt.","aufgehangen",{n:"Präteritum Aktiv: Der Hausmann hängte die Wäsche auf."}),
+ T("Der Passagier stellt die Koffer hin.","Die Koffer wurden hingestellt.","hingestellen",{n:"Präteritum Aktiv: Der Passagier stellte die Koffer hin."}),
+ T("Der Gast legt den Mantel ab.","Der Mantel wurde abgelegt.","abgelegen",{n:"Präteritum Aktiv: Der Gast legte den Mantel ab."}),
+ T("Die Touristen zeigen die Ausweise vor.","Die Ausweise wurden vorgezeigt.","vorgezeigen",{n:"Präteritum Aktiv: Die Touristen zeigten die Ausweise vor."}),
+ T("Jemand hilft der jungen Frau.","Der jungen Frau wurde geholfen.","gehelft",{alt:["Es wurde der jungen Frau geholfen."],n:"Präteritum Aktiv: Jemand half der jungen Frau. „helfen“ steht mit Dativ, deshalb bleibt „der jungen Frau“ im Dativ."}),
+ T("Niemand (!) sagt es ihr.","Es wurde ihr nicht gesagt.","gesagen",{n:"Präteritum Aktiv: Niemand sagte es ihr."}),
+ T("Niemand (!) singt mit.","Es wurde nicht mitgesungen.","mitgesingt",{n:"Präteritum Aktiv: Niemand sang mit."})
+]},
+
+{id:"pt2",area:"g",own:true,title:"Passiv Präteritum – Aufgabe 2 (Lücken)",task:"Ergänze das Passiv Präteritum mit dem angegebenen Verb.",src:"mein-deutschbuch.de, „Das Passiv im Präteritum“",cards:[
+ G("Die Eissporthalle [wurde] wegen Einsturzgefahr [geschlossen].","schließen","geschließt"),
+ G("Im August [wurden] viele Rechnungen nicht [bezahlt].","bezahlen","gebezahlt"),
+ G("Das Rauchen in öffentlichen Gebäuden [wurde] [verboten].","verbieten","verbietet"),
+ G("Wegen der Kälte [wurde] der Schiffsverkehr teilweise [eingestellt].","einstellen","eingestellen"),
+ G("Nach Streikende [wurden] die Tarifverhandlungen erneut [aufgenommen].","aufnehmen","aufgenehmt"),
+ G("In diesem Semester [wurden] viele Studienbewerber [abgewiesen].","abweisen","abgeweist"),
+ G("Der Speicherung personenbezogener Daten [wurde] erneut [widersprochen].","widersprechen","widergesprochen",{n:"„widersprechen“ steht mit Dativ: Der Satz hat kein Subjekt, das Verb steht im Singular."}),
+ G("Ein Skandal im Königshaus [wurde] noch rechtzeitig [vermieden].","vermeiden","vermeidet"),
+ G("Es [wurden] keine weiteren Untersuchungen [durchgeführt].","durchführen","durchführt"),
+ G("Die alten chinesischen Schriftzeichen [wurden] von mir [übersetzt].","übersetzen","übergesetzt"),
+ G("Der Gefangene [wurde] nach 37 Jahren [freigelassen].","freilassen","freigelasst"),
+ G("Die arme Frau [wurde] aus Eifersucht [getötet].","töten","getöten"),
+ G("Es [wurden] zu diesem Fall keine weiteren Beweise [vorgelegt].","vorlegen","vorgelegen"),
+ G("Das vorgegebene Ziel [wurde] von einigen Teilnehmern nicht [erreicht].","erreichen","geerreicht")
+]},
+
+{id:"pt3",area:"g",own:true,title:"Passiv Präteritum – Aufgabe 3 (Satz bilden)",task:"Bilde mit den Wörtern einen Satz im Passiv Präteritum. Ergänze fehlende Wörter.",src:"mein-deutschbuch.de, „Das Passiv im Präteritum“",cards:[
+ T("Haus / Strom / abstellen","Im Haus wurde der Strom abgestellt.","abgestellen",{alt:["Der Strom wurde im Haus abgestellt."]}),
+ T("Zugabteil / die Koffer / stehlen","Im Zugabteil wurden die Koffer gestohlen.","gestehlt",{alt:["Die Koffer wurden im Zugabteil gestohlen."]}),
+ T("Fundbüro / Tasche / abgeben","Im Fundbüro wurde eine Tasche abgegeben.","abgegebt",{alt:["Die Tasche wurde im Fundbüro abgegeben.","Eine Tasche wurde im Fundbüro abgegeben.","Im Fundbüro wurde die Tasche abgegeben."]}),
+ T("Bühne / Flamenco / tanzen","Auf der Bühne wurde Flamenco getanzt.","getanzen"),
+ T("Feuer / Hotel / löschen","Das Feuer im Hotel wurde gelöscht.","gelöschen",{alt:["Im Hotel wurde das Feuer gelöscht.","Das Feuer wurde im Hotel gelöscht."]}),
+ T("Straßen / Hochwasser / überfluten","Die Straßen wurden vom Hochwasser überflutet.","übergeflutet",{alt:["Die Straßen wurden durch das Hochwasser überflutet."]}),
+ T("Polizei / Verkehr / umleiten","Der Verkehr wurde von der Polizei umgeleitet.","umgeleiten"),
+ T("nicht / ihr / helfen","Ihr wurde nicht geholfen.","gehelft",{alt:["Es wurde ihr nicht geholfen."],n:"„helfen“ steht mit Dativ: kein Subjekt, das Verb steht im Singular."}),
+ T("Diebe / festnehmen","Die Diebe wurden festgenommen.","festgenehmt"),
+ T("Arbeit / fachmännisch / ausführen","Die Arbeit wurde fachmännisch ausgeführt.","ausgeführen"),
+ T("Probleme / nicht / rechnen","Mit Problemen wurde nicht gerechnet.","gerechnen",{alt:["Es wurde nicht mit Problemen gerechnet."],n:"rechnen mit + Dativ: kein Subjekt, das Verb steht im Singular."}),
+ T("neue Software / nicht / installieren","Die neue Software wurde nicht installiert.","geinstalliert"),
+ T("Geld / nicht / verzichten","Auf das Geld wurde nicht verzichtet.","geverzichtet",{alt:["Es wurde nicht auf das Geld verzichtet."],n:"verzichten auf + Akkusativ: kein Subjekt, das Verb steht im Singular."})
+]},
+
+{id:"pf1",area:"g",own:true,title:"Passiv Perfekt – Aufgabe 1 (Aktiv → Passiv)",task:"Bilde aus dem Aktivsatz das Passiv Perfekt.",src:"mein-deutschbuch.de, „Das Passiv im Perfekt“",cards:[
+ T("Doris lädt uns auch zur Party ein.","Wir sind auch zur Party eingeladen worden.","eingeladet",{n:"Perfekt Aktiv: Doris hat uns auch zur Party eingeladen."}),
+ T("Mike findet die Schlüssel nicht.","Die Schlüssel sind nicht gefunden worden.","gefindet",{n:"Perfekt Aktiv: Mike hat die Schlüssel nicht gefunden."}),
+ T("Der Drucker bricht den Druckauftrag ab.","Der Druckauftrag ist abgebrochen worden.","abgebrecht",{n:"Perfekt Aktiv: Der Drucker hat den Druckauftrag abgebrochen."}),
+ T("Heinz bietet nur 10 Euro für die Kamera.","Für die Kamera sind nur 10 Euro geboten worden.","gebietet",{alt:["Nur 10 Euro sind für die Kamera geboten worden.","Es sind nur 10 Euro für die Kamera geboten worden."],x:"Für die Kamera haben nur 10 Euro geboten worden.",n:"Perfekt Aktiv: Heinz hat nur 10 Euro für die Kamera geboten."}),
+ T("Maria findet einen Ring aus Gold.","Ein Ring aus Gold ist gefunden worden.","gefindet",{n:"Perfekt Aktiv: Maria hat einen Ring aus Gold gefunden."}),
+ T("Der Bagger gräbt einen tiefen Graben.","Ein tiefer Graben ist gegraben worden.","gegrabt",{n:"Perfekt Aktiv: Der Bagger hat einen tiefen Graben gegraben."}),
+ T("Bianca lügt den fremden Mann an.","Der fremde Mann ist angelogen worden.","angelügt",{n:"Perfekt Aktiv: Bianca hat den fremden Mann angelogen."}),
+ T("Man nennt ihn auch „Schlange“.","Er ist auch „Schlange“ genannt worden.","genennt",{n:"Perfekt Aktiv: Man hat ihn auch „Schlange“ genannt."}),
+ T("Das Mädchen singt den ganzen Tag Lieder.","Den ganzen Tag sind Lieder gesungen worden.","gesingt",{alt:["Lieder sind den ganzen Tag gesungen worden.","Es sind den ganzen Tag Lieder gesungen worden."],n:"Perfekt Aktiv: Das Mädchen hat den ganzen Tag Lieder gesungen."}),
+ T("Die Frauen nehmen die Kleider mit.","Die Kleider sind mitgenommen worden.","mitgenehmt",{n:"Perfekt Aktiv: Die Frauen haben die Kleider mitgenommen."}),
+ T("Niemand (!) ruft mich an.","Ich bin nicht angerufen worden.","angeruft",{n:"Perfekt Aktiv: Niemand hat mich angerufen."}),
+ T("Wir schieben den Schrank in die Ecke.","Der Schrank ist in die Ecke geschoben worden.","geschiebt",{n:"Perfekt Aktiv: Wir haben den Schrank in die Ecke geschoben."}),
+ T("Die Kinder schlagen die Türen zu.","Die Türen sind zugeschlagen worden.","zugeschlagt",{n:"Perfekt Aktiv: Die Kinder haben die Türen zugeschlagen."}),
+ T("Die Kugel trifft ihn ins linke Bein.","Er ist ins linke Bein getroffen worden.","getrefft",{n:"Perfekt Aktiv: Die Kugel hat ihn ins linke Bein getroffen."})
+]},
+
+{id:"pf2",area:"g",own:true,title:"Passiv Perfekt – Aufgabe 2 (Lücken)",task:"Ergänze das Passiv Perfekt mit dem angegebenen Verb.",src:"mein-deutschbuch.de, „Das Passiv im Perfekt“",cards:[
+ G("Nicht alle Fehler [sind] von den Programmierern [behoben worden].","beheben","behebt"),
+ G("Viele Autos [sind] einfach auf den Radwegen [abgestellt worden].","abstellen","abgestellen"),
+ G("Teilweise [sind] von der Polizei Stichwaffen [gefunden worden].","finden","gefindet"),
+ G("Professor Balthasar [ist] von seinen Studenten [überredet worden].","überreden","übergeredet"),
+ G("Viele Jugendliche [sind] nicht vor den Gefahren [geschützt worden].","schützen","geschützen"),
+ G("Wegen seines Sprachfehlers [ist] er oft [ausgelacht worden].","auslachen","ausgelachen"),
+ G("Das Virus [ist] mit allen Mitteln [bekämpft worden].","bekämpfen","gebekämpft"),
+ G("Von der Regierung [sind] Lebensmittelkarten [ausgegeben worden].","ausgeben","ausgegebt"),
+ G("Die Täter [sind] an ihren Tätowierungen [erkannt worden].","erkennen","erkennt"),
+ G("Diese Kinder [sind] von ihren Eltern schlecht [erzogen worden].","erziehen","erzieht"),
+ G("Das Fleisch [ist] von der Verkäuferin nicht [gewogen worden].","wiegen","gewiegt"),
+ G("Du [bist] von mir noch nicht [vergessen worden].","vergessen","vergesst"),
+ G("Ihr [seid] von eurem Lehrer in der Disko [gesehen worden].","sehen","geseht"),
+ G("[Bist] du auch schon mal von einer Wespe [gestochen worden]?","stechen","gestecht"),
+ G("Über den Unfall [ist] in der Zeitung nicht [berichtet worden].","berichten","geberichtet"),
+ G("Auf eine Anklage [ist] jedoch nicht [verzichtet worden].","verzichten","geverzichtet"),
+ G("Einst [bin] ich mit Ronaldo [verglichen worden].","vergleichen","vergleicht"),
+ G("Meinen Plänen [ist] Gott sei Dank [zugestimmt worden].","zustimmen","zugestimmen",{n:"„zustimmen“ steht mit Dativ: kein Subjekt, das Verb steht im Singular."}),
+ G("Uns [ist] keine Geschichte [vorgelesen worden].","vorlesen","vorgelest"),
+ G("Mir [ist] es von meinen Eltern [erlaubt worden].","erlauben","geerlaubt"),
+ G("Am Bahnhof [ist] ihr nicht [geholfen worden].","helfen","gehelft",{n:"„helfen“ steht mit Dativ: kein Subjekt, das Verb steht im Singular."}),
+ G("Ihm [ist] für seine Hilfe [gedankt worden].","danken","gedanken"),
+ G("Gegen das Gesetz [ist] bei der Aktion nicht [verstoßen worden].","verstoßen","verstoßt"),
+ G("Es [ist] nicht [verboten worden].","verbieten","verbietet"),
+ G("Es [sind] bei der Produktion viele Fehler [gemacht worden].","machen","gemachen"),
+ G("Es [ist] dem Redner nicht [zugehört worden].","zuhören","zugehören"),
+ G("Es [sind] mehrere Autos [zerstört worden].","zerstören","gezerstört"),
+ G("Es [ist] in der Innenstadt viel zu schnell [gefahren worden].","fahren","gefahrt"),
+ G("Bei der Herstellung [ist] es auch [verwendet worden].","verwenden","geverwendet"),
+ G("Es [ist] stundenlang nur [diskutiert worden].","diskutieren","gediskutiert")
+]},
+
+{id:"prep1",area:"g",kind:"vocab",own:true,title:"Präpositionen – aus den Kurstexten",task:"Welche Präposition fehlt?",src:"Sätze aus deinen Kurstexten (Bonn, Universitätsbibliothek, Passiv-Arbeitsblätter), teilweise gekürzt oder leicht umgestellt",cards:[
+ V("Zwei Wendepunkte verhalfen der kleinen Stadt am Rhein [zu] einer einzigartigen Geschichte.",["an","für"],{n:"jemandem verhelfen zu + Dativ"}),
+ V("1949 wurde Bonn überraschend [zur] vorläufigen Hauptstadt gewählt.",["zum","für"],{n:"jemanden/etwas wählen zu + Dativ (zu + der = zur)"}),
+ V("Immer wieder musste er sich [gegen] den Vorwurf wehren.",["vor","über"],{n:"sich wehren gegen + Akkusativ"}),
+ V("Adenauer hatte sich [für] Bonn stark gemacht.",["um","auf"],{n:"sich stark machen für + Akkusativ"}),
+ V("Bei den Bonnern sorgten die Staatsbesuche [für] Aufsehen.",["um","zu"],{n:"sorgen für + Akkusativ"}),
+ V("Frankfurt konnte [mit] seiner Infrastruktur punkten.",["an","von"],{n:"punkten mit + Dativ"}),
+ V("John le Carré lästerte [über] die neue deutsche Hauptstadt.",["von","auf"],{n:"lästern über + Akkusativ"}),
+ V("Die Villa Hammerschmidt dient noch heute [als] zweiter Amtssitz des Bundespräsidenten.",["zu","für"],{n:"dienen als + Nominativ"}),
+ V("51 Millionen Euro flossen [in] den Kulturbereich.",["auf","zu"],{n:"fließen in + Akkusativ"}),
+ V("Die Ausgleichsgelder haben wesentlich [zum] Ausbau der Region beigetragen.",["am","im"],{n:"beitragen zu + Dativ (zu + dem = zum)"}),
+ V("Wirtschaftlich profitiert die Bundesstadt [von] der Telekom und der Post.",["an","aus"],{n:"profitieren von + Dativ"}),
+ V("Viele protestierten [gegen] die Vergeudung von Steuergeldern.",["über","an"],{n:"protestieren gegen + Akkusativ; der Protest gegen"}),
+ V("Mit dem Fall der Mauer wurden die Weichen [für] den Wegzug der Regierung gestellt.",["zu","auf"],{n:"die Weichen stellen für + Akkusativ"}),
+ V("Bonn hat sich einen Namen [als] erste UN-Stadt Deutschlands gemacht.",["für","zu"],{n:"sich einen Namen machen als + Nominativ"}),
+ V("Das Doppeljubiläum sorgte [dafür], dass Bonn seine Vorzüge zeigen konnte.",["darum","dazu"],{n:"sorgen für → dafür sorgen, dass …"}),
+ V("Mehrere Millionen Euro sind [in] die digitale Infrastruktur investiert worden.",["an","auf"],{n:"investieren in + Akkusativ"}),
+ V("Sämtliche Arbeitsplätze sind [mit] modernen Computern ausgestattet.",["von","durch"],{n:"ausstatten mit + Dativ"}),
+ V("Die wertvollen Bestände müssen [vor] Feuchtigkeit geschützt werden.",["von","aus"],{n:"schützen vor + Dativ"}),
+ V("Sämtliche Mitarbeiter sind [über] die neuen Vorschriften informiert.",["an","um"],{n:"informieren über + Akkusativ"}),
+ V("Das neue System erleichtert den Zugang [zu] wissenschaftlichen Publikationen.",["an","auf"],{n:"der Zugang zu + Dativ. Aber: der Zugriff auf + Akkusativ"}),
+ V("Während der Bauarbeiten sind Schäden [an] der Gebäudesubstanz entdeckt worden.",["auf","zu"],{n:"der Schaden an + Dativ"}),
+ V("Im vergangenen Jahr sind neue Richtlinien [für] die Nutzung der Bibliothek verabschiedet worden.",["an","auf"],{n:"Richtlinien für + Akkusativ"}),
+ V("[Mit] Problemen wurde nicht gerechnet.",["Auf","Von"],{n:"rechnen mit + Dativ"}),
+ V("[Auf] eine Anklage ist jedoch nicht verzichtet worden.",["Von","Über"],{n:"verzichten auf + Akkusativ"}),
+ V("[Über] den Unfall ist in der Zeitung nicht berichtet worden.",["Auf","An"],{n:"berichten über + Akkusativ (auch: von + Dativ)"}),
+ V("[Gegen] das Gesetz ist bei der Aktion nicht verstoßen worden.",["Auf","Über"],{n:"verstoßen gegen + Akkusativ"}),
+ V("Einst bin ich [mit] Ronaldo verglichen worden.",["zu","an"],{n:"vergleichen mit + Dativ"}),
+ V("Die Täter sind [an] ihren Tätowierungen erkannt worden.",["auf","zu"],{n:"jemanden erkennen an + Dativ"}),
+ V("Ihm ist [für] seine Hilfe gedankt worden.",["um","über"],{n:"jemandem danken für + Akkusativ"}),
+ V("Wird er [nach] dem Weg gefragt?",["um","über"],{n:"fragen nach + Dativ"}),
+ V("Heinz bietet nur 10 Euro [für] die Kamera.",["um","an"],{n:"bieten für + Akkusativ"}),
+ V("Doris lädt uns auch [zur] Party ein.",["zum","bei"],{n:"einladen zu + Dativ (zu + der = zur)"}),
+ V("Die arme Frau wurde [aus] Eifersucht getötet.",["vor","von"],{n:"aus + Dativ nennt das Motiv einer Handlung (aus Eifersucht handeln). vor + Dativ nennt eine unkontrollierte Reaktion (vor Angst zittern)."}),
+ V("Die Eissporthalle wurde [wegen] Einsturzgefahr geschlossen.",["durch","aus"],{n:"wegen + Genitiv nennt den Grund"}),
+ V("Die Straße wurde vorübergehend [für] den Durchgangsverkehr gesperrt.",["gegen","vor"],{n:"sperren für + Akkusativ"})
+]},
+
+{id:"prep2",area:"g",kind:"vocab",own:true,title:"Präpositionen – neue Sätze",task:"Welche Präposition fehlt?",src:"neu entworfene Sätze von Claude",cards:[
+ V("Im Seminar setzen wir uns [mit] den Folgen der Digitalisierung auseinander.",["über","an"],{n:"sich auseinandersetzen mit + Dativ"}),
+ V("Ob das Projekt gelingt, hängt [von] der Finanzierung ab.",["an","auf"],{n:"abhängen von + Dativ"}),
+ V("Der Artikel bezieht sich [auf] eine Studie aus dem Jahr 2020.",["an","zu"],{n:"sich beziehen auf + Akkusativ"}),
+ V("Die Jury besteht [aus] fünf Fachleuten.",["auf","in"],{n:"bestehen aus + Dativ = sich zusammensetzen. Aber: bestehen auf + Dativ = verlangen"}),
+ V("Der Kunde besteht [auf] einer schriftlichen Bestätigung.",["aus","an"],{n:"bestehen auf + Dativ = verlangen. Aber: bestehen aus + Dativ = sich zusammensetzen"}),
+ V("Sie hat sich [um] ein Stipendium beworben.",["an","nach"],{n:"sich bewerben um + Akkusativ"}),
+ V("Nach langem Zögern entschied er sich [für] das Studium in Wien.",["zu","auf"],{n:"sich entscheiden für + Akkusativ"}),
+ V("Sie hat sich schnell [an] das neue Arbeitsumfeld gewöhnt.",["auf","mit"],{n:"sich gewöhnen an + Akkusativ"}),
+ V("Der Arzt wies [auf] mögliche Nebenwirkungen hin.",["an","über"],{n:"hinweisen auf + Akkusativ"}),
+ V("Viele Anwohner leiden [unter] dem ständigen Lärm.",["über","von"],{n:"leiden unter + Dativ (Umstände); leiden an + Dativ (Krankheit)"}),
+ V("In schwierigen Situationen kann sie sich [auf] ihr Team verlassen.",["an","mit"],{n:"sich verlassen auf + Akkusativ"}),
+ V("Niemand zweifelt [an] seiner Ehrlichkeit.",["über","von"],{n:"zweifeln an + Dativ; der Zweifel an"}),
+ V("Mehrere Gäste beschwerten sich [über] den schlechten Service.",["auf","gegen"],{n:"sich beschweren über + Akkusativ (bei + Dativ)"}),
+ V("Ohne Auto ist man auf dem Land [auf] den Bus angewiesen.",["von","an"],{n:"angewiesen sein auf + Akkusativ"}),
+ V("Die Eltern sind stolz [auf] ihre Tochter.",["über","für"],{n:"stolz sein auf + Akkusativ"}),
+ V("Die Kommission ist [von] der Qualität des Konzepts überzeugt.",["über","an"],{n:"überzeugt sein von + Dativ"}),
+ V("Das Unternehmen ist [an] einer langfristigen Zusammenarbeit interessiert.",["für","auf"],{n:"interessiert sein an + Dativ. Aber: sich interessieren für + Akkusativ"}),
+ V("Viele kleine Betriebe sind [von] staatlicher Unterstützung abhängig.",["auf","an"],{n:"abhängig sein von + Dativ"}),
+ V("Wer ist [für] die Sicherheit auf der Baustelle verantwortlich?",["über","um"],{n:"verantwortlich sein für + Akkusativ"}),
+ V("Es herrscht ein großer Mangel [an] Fachkräften.",["von","auf"],{n:"der Mangel an + Dativ"}),
+ V("Soziale Medien haben großen Einfluss [auf] die öffentliche Meinung.",["an","über"],{n:"der Einfluss auf + Akkusativ"}),
+ V("Gute Sprachkenntnisse sind die Voraussetzung [für] ein Studium in Deutschland.",["zu","auf"],{n:"die Voraussetzung für + Akkusativ"}),
+ V("Bitte achten Sie [auf] die Durchsagen am Bahnsteig.",["an","für"],{n:"achten auf + Akkusativ"}),
+ V("Der Hausmeister kümmert sich [um] die Reparatur der Heizung.",["für","über"],{n:"sich kümmern um + Akkusativ"}),
+ V("Die Stadt verfügt [über] ein gut ausgebautes Radwegenetz.",["mit","von"],{n:"verfügen über + Akkusativ"}),
+ V("Zu wenig Bewegung führt oft [zu] gesundheitlichen Problemen.",["in","auf"],{n:"führen zu + Dativ"}),
+ V("Experten warnen [vor] den Folgen des Klimawandels.",["über","gegen"],{n:"warnen vor + Dativ"}),
+ V("Die Öffnungszeiten richten sich [nach] der Jahreszeit.",["an","auf"],{n:"sich richten nach + Dativ"}),
+ V("Die Nachbarin bat uns [um] etwas Geduld.",["für","nach"],{n:"jemanden bitten um + Akkusativ"}),
+ V("Dieser Raum eignet sich gut [für] größere Veranstaltungen.",["an","auf"],{n:"sich eignen für + Akkusativ"}),
+ V("Viele Menschen haben Angst [vor] dem Verlust ihres Arbeitsplatzes.",["von","über"],{n:"die Angst vor + Dativ"}),
+ V("Die Regierung reagierte gelassen [auf] die Kritik der Opposition.",["an","über"],{n:"reagieren auf + Akkusativ"}),
+ V("Viele Zuhörer nahmen [an] der anschließenden Diskussion teil.",["bei","in"],{n:"teilnehmen an + Dativ"}),
+ V("Der Erfolg des Films beruht [auf] einer wahren Geschichte.",["an","aus"],{n:"beruhen auf + Dativ"})
+]}
 ];
-const WEEKS=[
- {ph:"Re-entry",sp:.85,sn:"1",bp:.75,sb:[3,"6"],dl:[3,"5"],ot:[3,"6"],gk:2600,ok:2100},
- {ph:"Re-entry",sp:.875,sn:"1",bp:.775,sb:[4,"6"],dl:[3,"5"],ot:[3,"6"],gk:2600,ok:2100},
- {ph:"Build",sp:.90,sn:"1",bp:.80,sb:[4,"5–8"],dl:[3,"5–6"],ot:[3,"6–8"],gk:2600,ok:2100},
- {ph:"Build",sp:.90,sn:"1–2",bp:.80,sb:[4,"5–8"],dl:[3,"5–6"],ot:[3,"6–8"],gk:2600,ok:2100},
- {ph:"Build · push week",sp:.925,sn:"1",bp:.80,sb:[4,"5–8"],dl:[3,"5–6"],ot:[3,"6–8"],gk:2600,ok:2000},
- {ph:"Build · push week",sp:.925,sn:"1–2",bp:.825,sb:[4,"5–8"],dl:[3,"5–6"],ot:[3,"5–6"],gk:2600,ok:2000},
- {ph:"Peak · push week",sp:.95,sn:"1",bp:.825,sb:[4,"5–6"],dl:[3,"5"],ot:[3,"5–6"],gk:2600,ok:2000},
- {ph:"Deload · Christmas",sp:0,sn:"none",bp:.70,sb:[2,"5"],dl:[2,"5"],ot:[2,"5"],gk:2500,ok:2500},
- {ph:"Max test",sp:1,sn:"1RM",bp:.75,sb:[0,"-"],dl:[0,"-"],ot:[2,"6"],gk:2600,ok:2300},
- {ph:"New block",sp:.90,sn:"1",bp:.80,sb:[4,"5–8"],dl:[3,"5–6"],ot:[3,"6–8"],gk:2600,ok:2100},
- {ph:"New block",sp:.925,sn:"1",bp:.80,sb:[4,"5–8"],dl:[3,"5–6"],ot:[3,"6–8"],gk:2600,ok:2100},
- {ph:"New block",sp:.95,sn:"1",bp:.825,sb:[4,"5–6"],dl:[3,"5"],ot:[3,"5–6"],gk:2600,ok:2100}
-];
-const Z2=[25,30,30,35,35,40,40,30,30,40,40,45];
-const IV=["5 × 1 min hard / 1 min easy","6 × 1 min / 1 min","7 × 1 min / 1 min","8 × 1 min / 1 min","4 × 3 min / 2 min","4 × 4 min / 3 min","4 × 4 min / 3 min","20 min easy, no intervals","Optional 2,000 m test, or 6 × 1 min / 1 min","8 × 1 min / 1 min","4 × 4 min / 3 min","5 × 4 min / 3 min"];
-const UPPER=[["Dumbbell floor press","8–15"],["Single-arm dumbbell row (1 s pause)","8–15 per side"],["Push-ups (deficit or loaded backpack)","10–20"],["Seated dumbbell shoulder press","8–15"],["Dumbbell pullover","10–15"],["Curl + overhead triceps extension","10–15 each"]];
-const LOWER=[["Bulgarian split squat","8–12 per leg"],["Single-leg Romanian deadlift","8–12 per leg"],["Tempo goblet squat (3 s down, 2 s pause)","10–15"],["Dumbbell hip thrust","10–15"]];
-const HOLIDAYS=["2026-12-24","2026-12-25","2026-12-26","2026-12-31"];
-const DAYNAMES=["Gym A · Squat + bench","Zone 2 row","Home upper body + easy row","Gym B · Deadlift + presses","Rest day","Home lower body + Atalanta","Row intervals + check-in"];
-const DOW=["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
-const MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+DECKS[0].bank=BANK;
 
-/* ---------------- Storage: this browser only ---------------- */
-const KEY="cutblock.v1";
-let storageOK=true;
-function defaults(){
-  return {start:"2026-11-02",startWeight:114,step:2.5,protein:170,holidayK:2900,bar:20,smithBar:10.3,
-    maxes:{squat:{est:135,tested:null},bench:{est:115,tested:null},deadlift:{est:125,tested:null},front:{est:110,tested:null},incline:{est:92.5,tested:null},ohp:{est:67.5,tested:null}},
-    acc:Object.fromEntries(ACC.map(a=>[a.k,a.start])),
-    loss:[.7,.7,.7,.7,.8,.8,.8,0,.3,.7,.7,.7],
-    adj:[],swaps:{},sleep:{},logs:{},lastBackup:null};
+/* ---------- Logik ohne Oberfläche ---------- */
+const SWAP={wird:"werden",werden:"wird",wirst:"wird",werde:"wird",werdet:"werden",wurde:"wurden",wurden:"wurde",ist:"sind",sind:"ist",bist:"ist",bin:"ist",seid:"sind"};
+const TAIL=/[.?!“]+$/;
+const keepCase=(from,to)=>from[0]===from[0].toUpperCase()?to[0].toUpperCase()+to.slice(1):to;
+const swapWord=w=>keepCase(w,SWAP[w.toLowerCase()]||w);
+function swapAux(s){const t=s.split(" ");const i=t.findIndex(x=>SWAP[x.replace(TAIL,"").toLowerCase()]);if(i<0)return s;const tail=(t[i].match(TAIL)||[""])[0];t[i]=swapWord(t[i].replace(TAIL,""))+tail;return t.join(" ");}
+function swapPart(s,w){const t=s.split(" ");let i=t.length-1;if(t[i].replace(TAIL,"")==="worden")i--;const tail=(t[i].match(TAIL)||[""])[0];t[i]=w+tail;return t.join(" ");}
+const parts=c=>[...c.a.matchAll(/\[(.+?)\]/g)].map(m=>m[1]);
+const full=c=>c.a.replace(/[\[\]]/g,"");
+const isGap=c=>!c.q;
+const expected=c=>isGap(c)?parts(c).join(" "):c.a;
+const shownSolution=c=>isGap(c)?parts(c).join(" … "):c.a;
+function options(c,deck){
+  let o;
+  if(deck.kind==="vocab") o=[parts(c)[0]].concat(c.d);
+  else if(isGap(c)){
+    const [aux,rest]=parts(c), j=(a,r)=>a+" … "+r;
+    if(deck.kind==="zv"){
+      const v=/ worden$/.test(rest), p=rest.replace(/ worden$/,"");
+      o=[j(aux,rest), j(aux,v?p:p+" worden"), j(keepCase(aux,aux.toLowerCase()==="ist"?"wird":"werden"),p)];
+    } else o=[j(aux,rest), j(swapWord(aux),rest), j(aux,swapPart(rest,c.w))];
+  } else o=[c.a, c.x||swapAux(c.a), swapPart(c.a,c.w)];
+  return o;
 }
-function load(){
-  let s=defaults();
-  try{
-    const raw=localStorage.getItem(KEY);
-    if(raw){const p=JSON.parse(raw);s=Object.assign(s,p);s.maxes=Object.assign(defaults().maxes,p.maxes||{});s.acc=Object.assign(defaults().acc,p.acc||{});}
-    localStorage.setItem(KEY+".probe","1");localStorage.removeItem(KEY+".probe");
-  }catch(e){storageOK=false;}
-  return s;
-}
-let S=load();
-let saveT=null;
-function save(){clearTimeout(saveT);saveT=setTimeout(()=>{try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){storageOK=false;}},150);}
-try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(()=>{});}catch(e){}
-
-/* ---------------- Dates ---------------- */
-function iso(d){return d.toISOString().slice(0,10);}
-function parse(s){const [y,m,d]=s.split("-").map(Number);return new Date(Date.UTC(y,m-1,d));}
-function addDays(s,n){const d=parse(s);d.setUTCDate(d.getUTCDate()+n);return iso(d);}
-function diffDays(a,b){return Math.round((parse(b)-parse(a))/864e5);}
-function localToday(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
-function fmt(s,long){const d=parse(s);const wd=DOW[(d.getUTCDay()+6)%7];return long?`${wd} ${d.getUTCDate()} ${MON[d.getUTCMonth()]}`:`${d.getUTCDate()} ${MON[d.getUTCMonth()]}`;}
-const TODAY=localToday();
-let viewDate=TODAY;
-if(diffDays(S.start,viewDate)<0)viewDate=S.start;
-
-/* ---------------- Plan engine ---------------- */
-function rnd(x){return Math.round(x/S.step)*S.step;}
-function maxFor(l,wk){const m=S.maxes[l];return (wk>=10&&m.tested)?Number(m.tested):Number(m.est);}
-function adjFor(k,wk){return S.adj.filter(a=>a.k===k&&a.from<=wk).reduce((t,a)=>t+a.kg,0);}
-function nums(r){return (String(r).match(/\d+/g)||[]).map(Number);}
-function lo(r){const n=nums(r);return n.length?n[0]:null;}
-function hi(r){const n=nums(r);return n.length?n[n.length-1]:null;}
-function kg(x){return (Math.round(x*10)/10).toLocaleString("en-GB");}
-
-function barFor(l){return Number(l==="incline"?S.smithBar:S.bar)||0;}
-function warmItem(l,wk,label,workW){
-  const bar=barFor(l);let steps,base;
-  if(label==="Back-off"){
-    base=Number(S.maxes[l].est);if(wk>=10)base=maxFor(l,wk);
-    if(l==="deadlift")steps=wk===8?[[.4,5],[.55,3]]:[[.4,5],[.5,5],[.65,3],[.75,2]];
-    else steps=wk===8?[[0,10],[.5,5]]:[[0,10],[.5,5],[.65,3],[.75,2]];
-  }else{base=workW;steps=[[0,10],[.5,6],[.75,3]];}
-  const sets=[];
-  steps.forEach(([p,r])=>{const w=p===0?bar:Math.max(bar,rnd(base*p));const last=sets[sets.length-1];if(last&&last.w===w)return;sets.push({w,r,bar:w===bar});});
-  const note=label==="Back-off"&&wk!==8?(wk===9?"Then work up in singles before your attempt.":"Then go straight to the heavy single."):"Rest about 60 s between warm-up sets.";
-  return {id:l+"-warm",kind:"warm",k:l,name:LIFTS[l],label:"Warm-up",warm:sets,sets:sets.length,reps:"",note};
-}
-function liftItems(l,wk,setsReps,label){
-  const items=liftItemsCore(l,wk,setsReps,label);
-  if(items.length){const first=items[0];items.unshift(warmItem(l,wk,label,first.weight));}
-  return items;
-}
-function liftItemsCore(l,wk,setsReps,label){
-  const W=WEEKS[wk-1],items=[];
-  if(wk===9&&label==="Back-off"){
-    items.push({id:l+"-test",kind:"lift",k:l,name:LIFTS[l],label:"1RM test",sets:1,reps:"1",weight:Number(S.maxes[l].est),rest:240,
-      note:"Work up in singles: about 85% → 92.5% → 97.5%, then attempt 2.5–5 kg above your estimate. Use safety bars or a spotter. Enter the result under Setup → Tested max."});
-    return items;
-  }
-  if(label==="Back-off"&&wk!==8){
-    const n=W.sn==="1–2"?2:1;
-    items.push({id:l+"-single",kind:"lift",k:l,name:LIFTS[l],label:"Heavy single",sets:n,reps:"1",pct:W.sp,weight:rnd(maxFor(l,wk)*W.sp),rest:210,
-      note:n===2?"Second single is optional. Leave 1–2 reps in reserve.":"Leave 1–2 reps in reserve (RPE 8–9)."});
-  }
-  if(setsReps[0]>0){
-    items.push({id:l+(label==="Back-off"?"-backoff":"-work"),kind:"lift",k:l,name:LIFTS[l],label:wk===8?"Deload sets":label,sets:setsReps[0],reps:setsReps[1],pct:W.bp,
-      weight:rnd(maxFor(l,wk)*W.bp)+adjFor(l,wk),rest:150,progress:wk!==8});
-  }
-  return items;
-}
-function accItems(sess,wk){
-  return ACC.filter(a=>a.s===sess).map(a=>{
-    const sets=wk===8?Math.ceil(a.sets/2):wk===9?2:a.sets;
-    return {id:"acc-"+a.k,kind:"acc",k:a.k,name:a.name,label:"Accessory",sets,reps:a.reps,weight:Number(S.acc[a.k])+adjFor(a.k,wk),rest:90,progress:wk!==8&&wk!==9,bw:Number(S.acc[a.k])===0};
-  });
-}
-function homeSets(wk,i,base){if(wk===8||wk===9)return 2;if(wk>=10&&i<2)return 4;return base;}
-const SESS=[0,3,5,2,6,1];
-const SHORT=["Gym A","Zone 2 row","Home upper","Gym B","Rest","Home lower","Row intervals"];
-const FATIGUE={1:1,2:2,5:3,6:4,3:5,0:5};
-const GEN_GYM="5 min easy row or bike, then 10 leg swings each side, 10 bodyweight squats, 10 hip hinges, 10 band pull-aparts or arm circles. About 8 minutes.";
-function weekOf(date){const d=diffDays(S.start,date);return (d<0||d>=84)?null:Math.floor(d/7)+1;}
-function weekDates(wk){return Array.from({length:7},(_,i)=>addDays(S.start,(wk-1)*7+i));}
-function sessionsOn(date){
-  const v=S.swaps[date];
-  if(Array.isArray(v))return v.slice();
-  if(typeof v==="number")return v===4?[]:[v];
-  const d=diffDays(S.start,date);const r=((d%7)+7)%7;return r===4?[]:[r];
-}
-function buildDow(dow,wk){
-  const W=WEEKS[wk-1];let items=[];
-  if(dow===0){items=[...liftItems("squat",wk,W.sb,"Back-off"),...liftItems("bench",wk,W.sb,"Back-off"),...accItems("A",wk)];}
-  else if(dow===3){
-    items=[...liftItems("deadlift",wk,W.dl,"Back-off")];
-    ["front","incline","ohp"].forEach(l=>items.push(...liftItems(l,wk,W.ot,"Working sets")));
-    items.push(...accItems("B",wk));
-  }
-  else if(dow===1){items=[{id:"row-z2",kind:"row",name:"Zone 2 row",plan:`${Z2[wk-1]} min steady · 2:10–2:20/500 m · 130–160 W`}];}
-  else if(dow===2){
-    items=UPPER.map((u,i)=>({id:"home-u"+i,kind:"home",name:u[0],label:"Home",sets:homeSets(wk,i,i>=4?2:3),reps:u[1],rest:75,progress:false}));
-    items.push({id:"row-easy",kind:"row",name:"Easy row",plan:"10 min easy after the strength work"});
-  }
-  else if(dow===5){
-    items=LOWER.map((u,i)=>({id:"home-l"+i,kind:"home",name:u[0],label:"Home",sets:homeSets(wk,i,3),reps:u[1],rest:75,progress:false}));
-    const rounds=wk<=2?3:(wk===8||wk===9)?2:4;
-    items.push({id:"fin",kind:"fin",name:"Atalanta finisher",plan:`${rounds} rounds: 400 m row, 20 push-ups, 20 sit-ups`,rounds});
-  }
-  else if(dow===6){items=[{id:"row-int",kind:"row",name:"Row intervals",plan:`${IV[wk-1]} · 5 min warm-up and cool-down · hard efforts 1:55–2:05/500 m`}];}
-  items.forEach(it=>it.dow=dow);
-  return items;
-}
-function lowSleep(date){return !!(S.sleep&&S.sleep[date]&&S.sleep[date].poor);}
-function applyLowSleep(items){
-  const out=[];
-  items.forEach(it=>{
-    if(it.kind==="lift"&&it.label==="Heavy single")return;
-    if(it.kind==="lift"&&it.label!=="1RM test"){
-      const c=Object.assign({},it);c.sets=Math.max(2,it.sets-1);c.weight=rnd(it.weight*0.9);c.progress=false;
-      c.note="Low-sleep version: 10% lighter, one set fewer, no heavy single. Stop the set if bar speed drops.";out.push(c);return;
-    }
-    if(it.kind==="warm"){const c=Object.assign({},it);c.note="Then go straight to the lighter working sets.";out.push(c);return;}
-    out.push(it);
-  });
+const strip=s=>s.replace(/[.,!?…„“"”'()]/g," ").replace(/\s+/g," ").trim();
+const norm=s=>strip(s).toLowerCase().replace(/ä/g,"ae").replace(/ö/g,"oe").replace(/ü/g,"ue").replace(/ß/g,"ss");
+const orderTokens=c=>full(c).split(/\s+/).filter(t=>t!=="…"&&t!=="–");
+/* Nomen mit Artikel: Wortform im Satz -> Grundform mit Artikel und Plural */
+const NOUNS={};
+const N=(entry,...forms)=>forms.forEach(f=>NOUNS[f]=entry);
+// Bonn
+N("der Wendepunkt, Pl. die Wendepunkte","Wendepunkte");N("die Stadt, Pl. die Städte","Stadt");N("der Rhein","Rhein");N("die Geschichte, Pl. die Geschichten","Geschichte");
+N("die Regierung, Pl. die Regierungen","Regierung");N("das Entsetzen","Entsetzen");N("der Bonner, Pl. die Bonner","Bonner","Bonnern");N("der Umzug, Pl. die Umzüge","Umzug");
+N("die Hauptstadt, Pl. die Hauptstädte","Hauptstadt");N("der Platzhalter, Pl. die Platzhalter","Platzhalter");N("die Lage, Pl. die Lagen","Lage");N("der Schnittpunkt, Pl. die Schnittpunkte","Schnittpunkt");
+N("die Besatzungszone, Pl. die Besatzungszonen","Besatzungszonen");N("die Infrastruktur, Pl. die Infrastrukturen","Infrastruktur");N("der Favorit, Pl. die Favoriten","Favorit");
+N("der Fürsprecher, Pl. die Fürsprecher","Fürsprecher");N("der Zentralfriedhof, Pl. die Zentralfriedhöfe","Zentralfriedhof");N("der Schriftsteller, Pl. die Schriftsteller","Schriftsteller");
+N("das Inland","Inland");N("das Ausland","Ausland");N("das Bundesdorf","Bundesdorf");N("die Zeit, Pl. die Zeiten","Zeit");N("der Regierungssitz, Pl. die Regierungssitze","Regierungssitz");
+N("der Prachtbau, Pl. die Prachtbauten","Prachtbauten");N("die Villa, Pl. die Villen","Villa");N("der Staatsbesuch, Pl. die Staatsbesuche","Staatsbesuche");N("das Aufsehen","Aufsehen");
+N("die Politprominenz","Politprominenz");N("der Eintrag, Pl. die Einträge","Eintrag");N("das Buch, Pl. die Bücher","Buch");N("das Rathaus, Pl. die Rathäuser","Rathaus");
+N("der Eindruck, Pl. die Eindrücke","Eindruck");N("die Bevölkerung, Pl. die Bevölkerungen","Bevölkerung");N("die Großdemonstration, Pl. die Großdemonstrationen","Großdemonstrationen");
+N("der Vorzug, Pl. die Vorzüge","Vorzüge");N("das Flair","Flair");N("das Licht, Pl. die Lichter","Licht");N("die Linie, Pl. die Linien","Linie");N("der Juni","Juni");N("die Uhr, Pl. die Uhren","Uhr");
+N("die Bundestagspräsidentin, Pl. die Bundestagspräsidentinnen","Bundestagspräsidentin");N("das Abstimmungsergebnis, Pl. die Abstimmungsergebnisse","Abstimmungsergebnis");N("der Bundestag","Bundestages");
+N("der Protest, Pl. die Proteste","Protesten");N("die Vergeudung","Vergeudung");N("das Steuergeld, Pl. die Steuergelder","Steuergeldern");N("der Trotz","Trotz");N("die Sommerpause, Pl. die Sommerpausen","Sommerpause");
+N("das Adieu","Adieu");N("das Gesetz, Pl. die Gesetze","Bonn-Berlin-Gesetz","Gesetz");N("die Bundesstadt","Bundesstadt");N("das Ausgleichsgeld, Pl. die Ausgleichsgelder","Ausgleichsgelder");
+N("die Milliarde, Pl. die Milliarden","Milliarden");N("der Euro, Pl. die Euro","Euro");N("die Million, Pl. die Millionen","Millionen");N("der Kulturbereich, Pl. die Kulturbereiche","Kulturbereich");
+N("die Telekom","Telekom");N("die Post","Post");N("der Global Player, Pl. die Global Player","Player");
+// Universitätsbibliothek
+N("das Jahr, Pl. die Jahre","Jahr","Jahren");N("die Veränderung, Pl. die Veränderungen","Veränderungen");N("der Lesesaal, Pl. die Lesesäle","Lesesäle");N("der Zug (im Zuge + Genitiv = während)","Zuge");
+N("die Modernisierung, Pl. die Modernisierungen","Modernisierung");N("der Arbeitsplatz, Pl. die Arbeitsplätze","Arbeitsplätze");N("der Computer, Pl. die Computer","Computern");
+N("das Ausleihsystem, Pl. die Ausleihsysteme","Ausleihsystem");N("der Monat, Pl. die Monate","Monaten");N("das Tausend, Pl. die Tausende","Tausende");N("die Handschrift, Pl. die Handschriften","Handschriften");
+N("das Dokument, Pl. die Dokumente","Dokumente");N("die Bauarbeiten (nur Plural)","Bauarbeiten");N("der Schaden, Pl. die Schäden","Schäden");N("die Gebäudesubstanz","Gebäudesubstanz");
+N("der Bereich, Pl. die Bereiche","Bereiche");N("die Sicherheitsmaßnahme, Pl. die Sicherheitsmaßnahmen","Sicherheitsmaßnahmen");N("die Richtlinie, Pl. die Richtlinien","Richtlinien");N("die Nutzung","Nutzung");
+N("die Bibliothek, Pl. die Bibliotheken","Bibliothek");N("die Zugangsbedingung, Pl. die Zugangsbedingungen","Zugangsbedingungen");N("der Mitarbeiter, Pl. die Mitarbeiter","Mitarbeiter");
+N("die Vorschrift, Pl. die Vorschriften","Vorschriften");N("die Maßnahme, Pl. die Maßnahmen","Maßnahmen");N("das Problem, Pl. die Probleme","Probleme","Problemen");N("der Tag, Pl. die Tage","Tag","Tagen");
+N("die Verfügung","Verfügung");N("das Mittel, Pl. die Mittel","Mittel","Mitteln");N("das Ziel, Pl. die Ziele","Ziel","Ziele");N("das Projekt, Pl. die Projekte","Projekts");N("die Pressemitteilung, Pl. die Pressemitteilungen","Pressemitteilung");
+// Passiv Präsens
+N("der Auszubildende / die Auszubildende, Pl. die Auszubildenden","Auszubildende");N("das Auto, Pl. die Autos","Auto","Autos");N("die Lehrerin, Pl. die Lehrerinnen","Lehrerin");N("das Haus, Pl. die Häuser","Haus");
+N("die Milch","Milch");N("die Hausaufgabe, Pl. die Hausaufgaben","Hausaufgaben");N("das Fenster, Pl. die Fenster","Fenster");N("die Hausfrau, Pl. die Hausfrauen","Hausfrau");N("der Hausmeister, Pl. die Hausmeister","Hausmeister");
+N("die Tür, Pl. die Türen","Tür","Türen");N("die Frau, Pl. die Frauen","Frau","Frauen");N("die Nudel, Pl. die Nudeln","Nudeln");N("das Kind, Pl. die Kinder","Kinder","Kindern");N("das Bier, Pl. die Biere","Bier");
+N("der Fisch, Pl. die Fische","Fische");N("der Hof, Pl. die Höfe","Hof");N("der Wagen, Pl. die Wagen","Wagen");N("das Mädchen, Pl. die Mädchen","Mädchen");N("der Sänger, Pl. die Sänger","Sänger");
+N("das Kino, Pl. die Kinos","Kino");N("die Mutter, Pl. die Mütter","Mutter");N("der Maler, Pl. die Maler","Maler");N("die Burg, Pl. die Burgen","Burg");N("der Fotograf, Pl. die Fotografen","Fotograf");
+N("die Sprache, Pl. die Sprachen","Sprachen");N("der Weg, Pl. die Wege","Weg");N("die Polizei","Polizei");N("die Sekretärin, Pl. die Sekretärinnen","Sekretärin");N("die Rechnung, Pl. die Rechnungen","Rechnung","Rechnungen");
+N("die Firma, Pl. die Firmen","Firma");N("der Kollege, Pl. die Kollegen","Kollege","Kollegen");N("der Schlüssel, Pl. die Schlüssel","Schlüssel");N("die Leiter, Pl. die Leitern","Leiter");N("der Keller, Pl. die Keller","Keller");
+N("die Heizung, Pl. die Heizungen","Heizung");N("der Vater, Pl. die Väter","Vater");N("der Freund, Pl. die Freunde","Freunde","Freunden");N("der Lackierer, Pl. die Lackierer","Lackierer");N("die Blume, Pl. die Blumen","Blumen");
+N("die Nachbarin, Pl. die Nachbarinnen","Nachbarin");N("die Katze, Pl. die Katzen","Katzen");N("die Schwester, Pl. die Schwestern","Schwester");N("der Bruder, Pl. die Brüder","Bruder");N("der Mülleimer, Pl. die Mülleimer","Mülleimer");
+N("das Altpapier","Altpapier");N("der Sohn, Pl. die Söhne","Sohn");N("die Tochter, Pl. die Töchter","Tochter");N("die Wohnung, Pl. die Wohnungen","Wohnung");N("die Wäsche","Wäsche");N("der Schuh, Pl. die Schuhe","Schuhe");
+N("das Zimmer, Pl. die Zimmer","Zimmer");N("die Aufgabe, Pl. die Aufgaben","Aufgaben");N("das Bett, Pl. die Betten","Bett");N("das Wochenende, Pl. die Wochenenden","Wochenende");N("der Kaffee","Kaffee");
+N("das Frühstück","Frühstück");N("die Eltern (nur Plural)","Eltern");N("der Tisch, Pl. die Tische","Tisch");N("das Geschirr","Geschirr");N("der Fernseher, Pl. die Fernseher","Fernseher");
+// Passiv Präteritum
+N("der Dieb, Pl. die Diebe","Dieb","Diebe");N("das Geld, Pl. die Gelder","Geld");N("der Bürgermeister, Pl. die Bürgermeister","Bürgermeister");N("der Präsident, Pl. die Präsidenten","Präsident","Präsidenten");
+N("der Hund, Pl. die Hunde","Hund");N("der Postbote, Pl. die Postboten","Postbote","Postboten");N("der Gast, Pl. die Gäste","Gast","Gäste");N("das Geschenk, Pl. die Geschenke","Geschenke");N("der Butler, Pl. die Butler","Butler");
+N("der Tee","Tee");N("der Hausmann, Pl. die Hausmänner","Hausmann");N("der Passagier, Pl. die Passagiere","Passagier");N("der Koffer, Pl. die Koffer","Koffer");N("der Mantel, Pl. die Mäntel","Mantel");
+N("der Tourist, Pl. die Touristen","Touristen");N("der Ausweis, Pl. die Ausweise","Ausweise");N("die Eissporthalle, Pl. die Eissporthallen","Eissporthalle");N("die Einsturzgefahr","Einsturzgefahr");N("der August","August");
+N("das Rauchen","Rauchen");N("das Gebäude, Pl. die Gebäude","Gebäuden");N("die Kälte","Kälte");N("der Schiffsverkehr","Schiffsverkehr");N("das Streikende","Streikende");
+N("die Tarifverhandlung, Pl. die Tarifverhandlungen","Tarifverhandlungen");N("das Semester, Pl. die Semester","Semester");N("der Studienbewerber, Pl. die Studienbewerber","Studienbewerber");N("die Speicherung","Speicherung");
+N("die Daten (Plural)","Daten");N("der Skandal, Pl. die Skandale","Skandal");N("das Königshaus, Pl. die Königshäuser","Königshaus");N("die Untersuchung, Pl. die Untersuchungen","Untersuchungen");
+N("das Schriftzeichen, Pl. die Schriftzeichen","Schriftzeichen");N("der Gefangene / die Gefangene, Pl. die Gefangenen","Gefangene");N("die Eifersucht","Eifersucht");N("der Fall, Pl. die Fälle","Fall");
+N("der Beweis, Pl. die Beweise","Beweise");N("der Teilnehmer, Pl. die Teilnehmer","Teilnehmern");N("der Strom","Strom");N("das Zugabteil, Pl. die Zugabteile","Zugabteil");N("das Fundbüro, Pl. die Fundbüros","Fundbüro");
+N("die Tasche, Pl. die Taschen","Tasche");N("die Bühne, Pl. die Bühnen","Bühne");N("der Flamenco","Flamenco");N("das Feuer, Pl. die Feuer","Feuer");N("das Hotel, Pl. die Hotels","Hotel");
+N("die Straße, Pl. die Straßen","Straßen");N("das Hochwasser","Hochwasser");N("der Verkehr","Verkehr");N("die Arbeit, Pl. die Arbeiten","Arbeit");N("die Software","Software");
+// Passiv Perfekt
+N("die Party, Pl. die Partys","Party");N("der Drucker, Pl. die Drucker","Drucker");N("der Druckauftrag, Pl. die Druckaufträge","Druckauftrag");N("die Kamera, Pl. die Kameras","Kamera");N("der Ring, Pl. die Ringe","Ring");
+N("das Gold","Gold");N("der Bagger, Pl. die Bagger","Bagger");N("der Graben, Pl. die Gräben","Graben");N("der Mann, Pl. die Männer","Mann");N("die Schlange, Pl. die Schlangen","Schlange");N("das Lied, Pl. die Lieder","Lieder");
+N("das Kleid, Pl. die Kleider","Kleider");N("der Schrank, Pl. die Schränke","Schrank");N("die Ecke, Pl. die Ecken","Ecke");N("die Kugel, Pl. die Kugeln","Kugel");N("das Bein, Pl. die Beine","Bein");
+N("der Fehler, Pl. die Fehler","Fehler");N("der Programmierer, Pl. die Programmierer","Programmierern");N("der Radweg, Pl. die Radwege","Radwegen");N("die Stichwaffe, Pl. die Stichwaffen","Stichwaffen");
+N("der Professor, Pl. die Professoren","Professor");N("der Student, Pl. die Studenten","Studenten");N("der Jugendliche / die Jugendliche, Pl. die Jugendlichen","Jugendliche");N("die Gefahr, Pl. die Gefahren","Gefahren");
+N("der Sprachfehler, Pl. die Sprachfehler","Sprachfehlers");N("das Virus, Pl. die Viren","Virus");N("die Lebensmittelkarte, Pl. die Lebensmittelkarten","Lebensmittelkarten");N("der Täter, Pl. die Täter","Täter");
+N("die Tätowierung, Pl. die Tätowierungen","Tätowierungen");N("das Fleisch","Fleisch");N("die Verkäuferin, Pl. die Verkäuferinnen","Verkäuferin");N("der Lehrer, Pl. die Lehrer","Lehrer");N("die Disko, Pl. die Diskos","Disko");
+N("die Wespe, Pl. die Wespen","Wespe");N("der Unfall, Pl. die Unfälle","Unfall");N("die Zeitung, Pl. die Zeitungen","Zeitung");N("die Anklage, Pl. die Anklagen","Anklage");N("der Plan, Pl. die Pläne","Plänen");
+N("der Bahnhof, Pl. die Bahnhöfe","Bahnhof");N("die Hilfe, Pl. die Hilfen","Hilfe");N("die Aktion, Pl. die Aktionen","Aktion");N("die Produktion, Pl. die Produktionen","Produktion");N("der Redner, Pl. die Redner","Redner");
+N("die Innenstadt, Pl. die Innenstädte","Innenstadt");N("die Herstellung","Herstellung");
+// Nomen-Verb-Verbindungen und Präpositionen
+N("die Universitätsleitung, Pl. die Universitätsleitungen","Universitätsleitung");N("die Bilanz, Pl. die Bilanzen","Bilanz");N("die Aufmerksamkeit","Aufmerksamkeit");N("die Sicherung, Pl. die Sicherungen","Sicherung");
+N("der Bestand, Pl. die Bestände","Bestände");N("die Mauer, Pl. die Mauern","Mauer");N("die Weiche, Pl. die Weichen","Weichen");N("der Wegzug","Wegzug");N("der Name, Pl. die Namen","Namen");N("die UN-Stadt, Pl. die UN-Städte","UN-Stadt");
+N("das Tausend, Pl. die Tausende","Tausend");N("die Institution, Pl. die Institutionen","Institutionen");N("der Sitz, Pl. die Sitze","Sitz");N("der Stadtrat, Pl. die Stadträte","Stadtrat");N("der Freitag, Pl. die Freitage","Freitag");
+N("die Entscheidung, Pl. die Entscheidungen","Entscheidung");N("die Stelle, Pl. die Stellen","Stelle");N("der Bewerber, Pl. die Bewerber","Bewerber");N("die Berufserfahrung, Pl. die Berufserfahrungen","Berufserfahrung");
+N("die Frage, Pl. die Fragen","Frage");N("die Universität, Pl. die Universitäten","Universität");N("der Studierende / die Studierende, Pl. die Studierenden","Studierenden");N("der Laptop, Pl. die Laptops","Laptops");
+N("der Bürger, Pl. die Bürger","Bürger");N("das Beratungsangebot, Pl. die Beratungsangebote","Beratungsangebot");N("der Anspruch, Pl. die Ansprüche","Anspruch");N("die Opposition","Opposition");N("die Kritik, Pl. die Kritiken","Kritik");
+N("das Wohngeld","Wohngeld");N("der Antrag, Pl. die Anträge","Antrag");N("der Autofahrer, Pl. die Autofahrer","Autofahrer");N("der Radfahrer, Pl. die Radfahrer","Radfahrer");N("die Rücksicht","Rücksicht");N("der Betracht (nur in festen Wendungen)","Betracht");
+N("die Rede, Pl. die Reden","Rede");N("die Ministerin, Pl. die Ministerinnen","Ministerin");N("die Sorge, Pl. die Sorgen","Sorge");N("der Ausdruck, Pl. die Ausdrücke","Ausdruck");N("der Januar","Januar");N("die Kraft, Pl. die Kräfte","Kraft");
+N("die Pflegekraft, Pl. die Pflegekräfte","Pflegekräfte");N("der Druck","Druck");N("der Beitrag, Pl. die Beiträge","Beitrag");N("der Klimaschutz","Klimaschutz");N("das Schreiben, Pl. die Schreiben","Schreiben");
+N("der Anwalt, Pl. die Anwälte","Anwalt");N("der Bezug, Pl. die Bezüge","Bezug");N("der Vertrag, Pl. die Verträge","Vertrag");N("der Bericht, Pl. die Berichte","Bericht");N("die Kenntnis, Pl. die Kenntnisse","Kenntnis");
+N("die Medien (Plural)","Medien");N("der Wahlkampf, Pl. die Wahlkämpfe","Wahlkampf");N("die Rolle, Pl. die Rollen","Rolle");N("der Minister, Pl. die Minister","Minister");N("der Vorwurf, Pl. die Vorwürfe","Vorwurf","Vorwürfen");
+N("die Stellung, Pl. die Stellungen","Stellung");N("der Einfluss, Pl. die Einflüsse","Einfluss");N("die Sitzung, Pl. die Sitzungen","Sitzung");N("das Thema, Pl. die Themen","Thema");N("die Überstunde, Pl. die Überstunden","Überstunden");
+N("die Sprache, Pl. die Sprachen","Sprache");N("die Miete, Pl. die Mieten","Miete");N("der Arbeitsweg, Pl. die Arbeitswege","Arbeitsweg");N("der Kauf, Pl. die Käufe","Kauf");N("die Abteilungsleiterin, Pl. die Abteilungsleiterinnen","Abteilungsleiterin");
+N("die Verantwortung","Verantwortung");N("der Vorschlag, Pl. die Vorschläge","Vorschlag");N("die Diskussion, Pl. die Diskussionen","Diskussion");N("der Brauch, Pl. die Bräuche","Bräuche");N("die Vergessenheit","Vergessenheit");
+N("der Widerstand, Pl. die Widerstände","Widerstand");N("der Bau, Pl. die Bauten","Bau");N("die Autobahn, Pl. die Autobahnen","Autobahn");N("das Stadtfest, Pl. die Stadtfeste","Stadtfest");N("die Vorbereitung, Pl. die Vorbereitungen","Vorbereitungen");
+N("die Chefin, Pl. die Chefinnen","Chefin");N("das Gespräch, Pl. die Gespräche","Gespräch");N("der Streik, Pl. die Streiks","Streik");N("der Zugausfall, Pl. die Zugausfälle","Zugausfälle");N("die Folge, Pl. die Folgen","Folge","Folgen");
+N("die Planung, Pl. die Planungen","Planung");N("die Kosten (nur Plural)","Kosten");N("die Acht (nur in festen Wendungen)","Acht");N("das Praktikum, Pl. die Praktika","Praktikum");N("das Können","Können");N("der Beweis, Pl. die Beweise","Beweis");
+N("der Trainer, Pl. die Trainer","Trainer");N("der Abschied, Pl. die Abschiede","Abschied");N("der Verein, Pl. die Vereine","Verein");N("der Wunsch, Pl. die Wünsche","Wunsch");N("der Garten, Pl. die Gärten","Garten");
+N("die Erfüllung","Erfüllung");N("die Studie, Pl. die Studien","Studie");N("die Fachwelt","Fachwelt");N("die Anerkennung","Anerkennung");N("der Anwohner, Pl. die Anwohner","Anwohner","Anwohnern");N("der Bescheid, Pl. die Bescheide","Bescheid");
+N("der Amtssitz, Pl. die Amtssitze","Amtssitz");N("der Bundespräsident, Pl. die Bundespräsidenten","Bundespräsidenten");N("der Ausbau","Ausbau");N("die Region, Pl. die Regionen","Region");N("das Doppeljubiläum, Pl. die Doppeljubiläen","Doppeljubiläum");
+N("die Feuchtigkeit","Feuchtigkeit");N("das System, Pl. die Systeme","System");N("der Zugang, Pl. die Zugänge","Zugang");N("die Publikation, Pl. die Publikationen","Publikationen");N("die Straße, Pl. die Straßen","Straße");
+N("der Durchgangsverkehr","Durchgangsverkehr");N("das Seminar, Pl. die Seminare","Seminar");N("die Digitalisierung","Digitalisierung");N("das Projekt, Pl. die Projekte","Projekt");N("die Finanzierung, Pl. die Finanzierungen","Finanzierung");
+N("der Artikel, Pl. die Artikel","Artikel");N("die Jury, Pl. die Jurys","Jury");N("der Fachmann / die Fachfrau, Pl. die Fachleute","Fachleuten");N("der Kunde, Pl. die Kunden","Kunde");N("die Bestätigung, Pl. die Bestätigungen","Bestätigung");
+N("das Stipendium, Pl. die Stipendien","Stipendium");N("das Zögern","Zögern");N("das Studium, Pl. die Studien","Studium");N("das Arbeitsumfeld","Arbeitsumfeld");N("der Arzt, Pl. die Ärzte","Arzt");
+N("die Nebenwirkung, Pl. die Nebenwirkungen","Nebenwirkungen");N("der Lärm","Lärm");N("die Situation, Pl. die Situationen","Situationen");N("das Team, Pl. die Teams","Team");N("die Ehrlichkeit","Ehrlichkeit");
+N("der Service","Service");N("das Land, Pl. die Länder","Land");N("der Bus, Pl. die Busse","Bus");N("die Kommission, Pl. die Kommissionen","Kommission");N("die Qualität, Pl. die Qualitäten","Qualität");
+N("das Konzept, Pl. die Konzepte","Konzepts");N("das Unternehmen, Pl. die Unternehmen","Unternehmen");N("die Zusammenarbeit","Zusammenarbeit");N("der Betrieb, Pl. die Betriebe","Betriebe");N("die Unterstützung","Unterstützung");
+N("die Sicherheit","Sicherheit");N("die Baustelle, Pl. die Baustellen","Baustelle");N("der Mangel, Pl. die Mängel","Mangel");N("die Fachkraft, Pl. die Fachkräfte","Fachkräften");N("die Meinung, Pl. die Meinungen","Meinung");
+N("die Sprachkenntnisse (Plural)","Sprachkenntnisse");N("die Voraussetzung, Pl. die Voraussetzungen","Voraussetzung");N("die Durchsage, Pl. die Durchsagen","Durchsagen");N("der Bahnsteig, Pl. die Bahnsteige","Bahnsteig");
+N("die Reparatur, Pl. die Reparaturen","Reparatur");N("das Radwegenetz, Pl. die Radwegenetze","Radwegenetz");N("die Bewegung, Pl. die Bewegungen","Bewegung");N("der Klimawandel","Klimawandels");N("die Öffnungszeit, Pl. die Öffnungszeiten","Öffnungszeiten");
+N("die Jahreszeit, Pl. die Jahreszeiten","Jahreszeit");N("die Geduld","Geduld");N("der Raum, Pl. die Räume","Raum");N("die Veranstaltung, Pl. die Veranstaltungen","Veranstaltungen");N("der Mensch, Pl. die Menschen","Menschen");
+N("die Angst, Pl. die Ängste","Angst");N("der Verlust, Pl. die Verluste","Verlust");N("der Arbeitsplatz, Pl. die Arbeitsplätze","Arbeitsplatzes");N("der Zuhörer, Pl. die Zuhörer","Zuhörer");N("der Erfolg, Pl. die Erfolge","Erfolg");
+N("der Film, Pl. die Filme","Films");N("der Experte, Pl. die Experten","Experten");
+function nounsOf(c){
+  const text=(c.q?c.q+" ":"")+full(c), out=[];
+  text.split(/[\s\/]+/).forEach(t=>{const e=NOUNS[t.replace(/[.,!?…„“"”()]/g,"")];if(e&&!out.includes(e))out.push(e);});
   return out;
 }
-function sessionFor(date){
-  const wk=weekOf(date);if(wk==null)return null;
-  const d=diffDays(S.start,date),realDow=d%7;
-  const W=WEEKS[wk-1];
-  const dows=sessionsOn(date).sort((a,b)=>SESS.indexOf(a)-SESS.indexOf(b));
-  let items=[];
-  dows.forEach(dw=>{items.push(...buildDow(dw,wk));});
-  const gym=dows.includes(0)||dows.includes(3);
-  if(gym){
-    if(lowSleep(date))items=applyLowSleep(items);
-    items.unshift({id:"gen",kind:"gen",name:"General warm-up",plan:GEN_GYM});
-  }else if(dows.includes(2)||dows.includes(5)){
-    items.unshift({id:"gen",kind:"gen",name:"General warm-up",plan:dows.includes(5)?"3–5 min easy row, then 10 leg swings each side, 10 bodyweight squats, 10 glute bridges, 5 slow split squats each leg.":"3–5 min easy row, then 10 arm circles each way, 10 push-ups on knees or against a bench, 10 light dumbbell rows each side."});
-  }
-  let kcal=gym?W.gk:W.ok;
-  if(HOLIDAYS.includes(date))kcal=S.holidayK;
-  let warn="";
-  if(date==="2026-12-24"&&dows.includes(3))warn="Christmas Eve: move Gym B to 23 Dec, or let the app reschedule it.";
-  if(date==="2026-12-31"&&dows.includes(3))warn="If the gym is closed on 31 Dec, move the deadlift test to Sat 2 Jan.";
-  const title=dows.length?dows.map(x=>SHORT[x]).join(" + "):"Rest day";
-  const swapped=S.swaps[date]!=null&&JSON.stringify(dows.slice().sort())!==JSON.stringify((realDow===4?[]:[realDow]));
-  return {wk,dow:dows[0],dows,realDow,W,items,title,kcal,holiday:HOLIDAYS.includes(date),warn,swapped};
-}
-/* status of one session type on one date */
-function dowStatusOn(date,dow,wk){
-  const main=buildDow(dow,wk).filter(it=>it.kind!=="warm"&&it.kind!=="gen"&&!(lowSleep(date)&&it.label==="Heavy single"));
-  const st=main.map(it=>itemStatus(date,it));
-  if(st.length&&st.every(x=>x===2))return "done";
-  if(st.some(x=>x>0))return "partial";
-  return "none";
-}
-/* week overview: where each of the 6 sessions stands */
-function weekInfo(wk){
-  const dates=weekDates(wk);
-  return SESS.map(dw=>{
-    let doneOn=null,partialOn=null,future=null,past=null;
-    dates.forEach(d=>{
-      if(!sessionsOn(d).includes(dw))return;
-      const st=dowStatusOn(d,dw,wk);
-      if(st==="done")doneOn=doneOn||d;
-      else if(st==="partial")partialOn=partialOn||d;
-      else if(diffDays(d,TODAY)<=0)future=future||d;
-      else past=past||d;
-    });
-    let state=doneOn?"done":partialOn?"partial":future?"scheduled":past?"missed":"unscheduled";
-    return {dow:dw,name:SHORT[dw],state,date:doneOn||partialOn||future||past};
-  });
-}
-function daysLeft(wk){return weekDates(wk).filter(d=>diffDays(TODAY,d)>=0);}
-function setDay(date,arr){S.swaps[date]=arr.slice();}
-function removeEverywhere(wk,dow,except){
-  weekDates(wk).forEach(d=>{if(d===except)return;const a=sessionsOn(d);if(a.includes(dow)&&dowStatusOn(d,dow,wk)==="none")setDay(d,a.filter(x=>x!==dow));});
-}
-function hasProgress(date){const s=sessionFor(date);return !!s&&s.items.some(it=>it.kind!=="gen"&&it.kind!=="warm"&&itemStatus(date,it)>0);}
-/* Reschedule every open session over the remaining days of the week */
-function reschedule(wk,fromDate,keepToday){
-  const dates=weekDates(wk).filter(d=>diffDays(fromDate,d)>=0);
-  if(!dates.length)return {placed:0,left:[]};
-  const info=weekInfo(wk);
-  const fixed=new Set();
-  if(keepToday&&dates[0]===fromDate)fixed.add(fromDate);
-  dates.forEach(d=>{if(hasProgress(d))fixed.add(d);});
-  const free=dates.filter(d=>!fixed.has(d));
-  const open=info.filter(x=>x.state!=="done"&&x.state!=="partial"&&!(x.state==="scheduled"&&!free.includes(x.date))).map(x=>x.dow);
-  const slots={};free.forEach(d=>slots[d]=[]);
-  const allDates=weekDates(wk);
-  const assigned=d=>slots[d]!=null?slots[d]:sessionsOn(d);
-  const isGym=d=>{if(!d)return false;const a=assigned(d);return a.includes(0)||a.includes(3);};
-  const gymNear=d=>isGym(addDays(d,-1))||isGym(addDays(d,1));
-  const order=open.slice().sort((a,b)=>[0,3,5,2,6,1].indexOf(a)-[0,3,5,2,6,1].indexOf(b));
-  const left=[];
-  order.forEach(dw=>{
-    const home=allDates[dw];
-    const empty=free.filter(d=>slots[d].length===0);
-    const ok=d=>{
-      if(dw===0||dw===3)return !gymNear(d);
-      if(dw===5)return !gymNear(d)||true;
-      return true;
-    };
-    let pick=null;
-    if(slots[home]&&slots[home].length===0&&ok(home))pick=home;
-    if(!pick)pick=empty.find(ok)||null;
-    if(!pick&&(dw===0||dw===3))pick=empty[0]||null;
-    if(!pick){
-      if(dw===1||dw===6){const c=free.filter(d=>!slots[d].includes(1)&&!slots[d].includes(6)&&slots[d].length<2);pick=c.find(d=>slots[d].includes(2)||slots[d].includes(5))||c.find(d=>!slots[d].includes(0)&&!slots[d].includes(3))||c[0]||null;}
-      else if(dw===2||dw===5)pick=free.find(d=>slots[d].length===1&&(slots[d][0]===1||slots[d][0]===6))||null;
-    }
-    if(pick)slots[pick].push(dw);else left.push(dw);
-  });
-  free.forEach(d=>setDay(d,slots[d]));
-  return {placed:order.length-left.length,left};
-}
-function targetFor(wk){let t=Number(S.startWeight);for(let i=0;i<wk;i++)t-=Number(S.loss[i]||0);return Math.round(t*10)/10;}
+/*UI*/
+const esc=t=>t.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;");
+const shuffled=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
+const $=id=>document.getElementById(id);
 
-/* ---------------- Logs ---------------- */
-function dayLog(date,create){if(!S.logs[date]){if(!create)return null;S.logs[date]={items:{},body:{}};}return S.logs[date];}
-function itemLog(date,it,create){
-  const dl=dayLog(date,create);if(!dl)return null;
-  if(!dl.items[it.id]&&create){
-    dl.items[it.id]=it.sets?{sets:Array.from({length:it.sets},()=>({w:null,r:null,d:false})),rpe:"",note:""}:{f:{},d:false};
-  }
-  const L=dl.items[it.id];
-  if(L&&it.sets&&L.sets&&L.sets.length<it.sets){while(L.sets.length<it.sets)L.sets.push({w:null,r:null,d:false});}
-  return L;
-}
-function itemStatus(date,it){
-  const L=itemLog(date,it,false);if(!L)return 0;
-  if(it.sets){const n=Math.min(L.sets.length,it.sets);const d=L.sets.slice(0,it.sets).filter(s=>s.d).length;return d===0?0:d>=it.sets?2:1;}
-  return L.d?2:(L.f&&Object.values(L.f).some(v=>v!==""&&v!=null)?1:0);
-}
-function dayStatus(date){
-  const s=sessionFor(date);if(!s||!s.items.length)return "rest";
-  const main=s.items.filter(it=>it.kind!=="warm"&&it.kind!=="gen");
-  if(!main.length)return "rest";
-  const st=main.map(it=>itemStatus(date,it));
-  if(st.every(x=>x===2))return "done";
-  if(st.some(x=>x>0))return "partial";
-  return diffDays(date,TODAY)>0?"missed":"planned";
-}
+const st={area:"v",deck:{v:"bonn",g:"zv"},mode:"write",pos:{},order:{},done:{}};
+const KEY="c1-lernkarten-v1";
+function save(){try{const done={};for(const k in st.done)done[k]=[...st.done[k]];localStorage.setItem(KEY,JSON.stringify({area:st.area,deck:st.deck,mode:st.mode,pos:st.pos,done}));}catch(e){}}
+(function load(){try{const s=JSON.parse(localStorage.getItem(KEY)||"null");if(!s)return;
+  if(s.area==="v"||s.area==="g")st.area=s.area;
+  if(["write","order","choose"].includes(s.mode))st.mode=s.mode;
+  for(const a of ["v","g"])if(s.deck&&DECKS.some(d=>d.id===s.deck[a]&&d.area===a))st.deck[a]=s.deck[a];
+  Object.assign(st.pos,s.pos||{});
+  for(const k in (s.done||{}))st.done[k]=new Set(s.done[k]);
+}catch(e){}})();
+const curDeck=()=>DECKS.find(d=>d.id===st.deck[st.area]);
+const doneSet=()=>{const k=st.deck[st.area]+"/"+st.mode;return st.done[k]||(st.done[k]=new Set());};
+function list(deck){const o=st.order[deck.id]||(st.order[deck.id]=deck.cards.map((_,i)=>i));return st.mode==="order"?o.filter(i=>!deck.cards[i].noOrder):o;}
 
-/* ---------------- Rendering helpers ---------------- */
-function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]));}
-const $=s=>document.querySelector(s);
-function route(){const h=(location.hash||"#today").slice(1);return ["today","week","progress","setup"].includes(h)?h:"today";}
-function render(){
-  const r=route();
-  document.querySelectorAll("nav.tabs a").forEach(a=>a.classList.toggle("on",a.dataset.tab===r));
-  if(r==="today")renderToday();else if(r==="week")renderWeek();else if(r==="progress")renderProgress();else renderSetup();
-}
-function statusChip(st){
-  return {done:'<span class="chip good">Done</span>',partial:'<span class="chip warn">Partly done</span>',missed:'<span class="chip">Not logged</span>',planned:'<span class="chip">Planned</span>',rest:'<span class="chip">Rest</span>'}[st];
-}
-
-/* ---------------- Today ---------------- */
-function renderToday(){
-  const s=sessionFor(viewDate);
-  const isToday=viewDate===TODAY;
-  let sub="";
-  if(s){
-    sub=`<span class="chip accent">Week ${s.wk} · ${esc(s.W.ph)}</span><span class="chip num">${s.kcal.toLocaleString("en-GB")} kcal · ${S.protein} g protein</span>`;
-    if(s.holiday)sub+='<span class="chip warn">Holiday day</span>';
-  }else{
-    sub=`<span class="chip">${diffDays(S.start,viewDate)<0?"Before the plan starts":"After the 12 weeks"}</span>`;
-  }
-  $("#top").innerHTML=`<div class="inner">
-    <div class="daterow"><button class="iconbtn" type="button" data-act="day" data-n="-1" aria-label="Previous day">‹</button>
-      <h1>${isToday?"Today · ":""}${fmt(viewDate,true)}</h1>
-      <button class="iconbtn" type="button" data-act="day" data-n="1" aria-label="Next day">›</button></div>
-    <div class="sub">${sub}${!isToday?'<button class="btn small" type="button" data-act="gotoday">Back to today</button>':""}</div></div>`;
-  let h="";
-  if(!storageOK)h+='<div class="banner warn">This browser is blocking storage, so entries will be lost when you close the page. Open the link in your phone’s normal browser, or copy a backup from Setup after each session.</div>';
-  else if(Object.keys(S.logs).length&&(!S.lastBackup||diffDays(S.lastBackup,TODAY)>=7))h+='<div class="banner info">Your log lives only on this device. <a href="#setup">Copy a backup</a> once a week so a cleared browser can’t wipe it.</div>';
-  if(!s){
-    h+=`<div class="card empty">${diffDays(S.start,viewDate)<0?`The plan starts on ${fmt(S.start,true)}.`:"The 12 weeks are complete. Check Progress for your numbers."}</div>`;
-    h+=bodyCard(null);
-    $("#view").innerHTML=`<div class="stack">${h}</div>`;return;
-  }
-  h+=`<div class="card"><div class="cardhead"><div><div class="label">${DOW[s.realDow]}${s.swapped?" · changed":""}${lowSleep(viewDate)?" · low sleep":""}</div><h2>${esc(s.title)}</h2></div>${statusChip(dayStatus(viewDate))}</div>
-    ${s.warn?`<div class="banner warn">${esc(s.warn)}</div>`:""}
-    <div class="btns"><button type="button" class="btn ${planOpen?"primary":""}" data-act="planopen">Change today’s plan</button>
-    <button type="button" class="btn ${lowSleep(viewDate)?"primary":""}" data-act="sleep">${lowSleep(viewDate)?"Slept badly ✓":"Slept badly?"}</button></div>
-    ${planOpen?planPanel(viewDate,s):""}</div>`;
-  h+=weekBanner(viewDate,s);
-  if(lowSleep(viewDate))h+=sleepCard(viewDate,s);
-  if(!s.items.length){h+='<div class="card"><h3>Rest</h3><div class="note">Recovery is part of the plan. Aim for 7–9 hours of sleep and hit your protein target.</div></div>';}
-  s.items.forEach(it=>{h+=itemCard(viewDate,s,it);});
-  h+=extraCard(viewDate);
-  h+=bodyCard(s);
-  $("#view").innerHTML=`<div class="stack">${h}</div>`;
-}
-let planOpen=false,extraOpen=false;
-const STATE_TXT={done:"Done",partial:"Started",scheduled:"Planned",missed:"Missed",unscheduled:"No day yet"};
-function stateChip(x){
-  const cls={done:"good",partial:"warn",scheduled:"",missed:"warn",unscheduled:"warn"}[x.state];
-  const when=x.date&&x.state!=="unscheduled"?" "+DOW[(parse(x.date).getUTCDay()+6)%7]:"";
-  return `<span class="chip ${cls}">${STATE_TXT[x.state]}${when}</span>`;
-}
-function planPanel(date,s){
-  const info=weekInfo(s.wk);const today=sessionsOn(date);
-  const rows=info.map(x=>{
-    const on=today.includes(x.dow);
-    let btn;
-    if(on)btn=`<button type="button" class="btn small primary" data-act="unassign" data-dow="${x.dow}">On today ✓</button>`;
-    else if(x.state==="done"||x.state==="partial")btn=`<button type="button" class="btn small" disabled>${x.state==="done"?"Done":"Started"}</button>`;
-    else btn=`<button type="button" class="btn small" data-act="assign" data-dow="${x.dow}">Do today</button>`;
-    return `<div class="planrow"><span><b>${esc(x.name)}</b> ${stateChip(x)}</span>${btn}</div>`;
-  }).join("");
-  return `<div class="planbox"><div class="note">Pick any of this week’s sessions for today. Moving one here takes it off its other day. You can do two light sessions on one day, such as a row after home training.</div>${rows}
-    <div class="btns"><button type="button" class="btn small" data-act="restday">Make today a rest day</button>
-    <button type="button" class="btn small" data-act="resched">Reschedule rest of week</button>
-    <button type="button" class="btn small" data-act="resetweek">Reset week to original plan</button></div></div>`;
-}
-function weekBanner(date,s){
-  if(diffDays(date,TODAY)!==0)return "";
-  const info=weekInfo(s.wk);
-  const open=info.filter(x=>x.state!=="done");
-  const loose=info.filter(x=>x.state==="missed"||x.state==="unscheduled");
-  const left=daysLeft(s.wk).length;
-  let h="";
-  if(loose.length){
-    h+=`<div class="banner warn">${loose.map(x=>x.name).join(", ")} ${loose.length>1?"have":"has"} no day left this week. <button type="button" class="btn small primary" data-act="resched">Reschedule rest of week</button></div>`;
-  }
-  const heavy=open.filter(x=>x.dow!==1&&x.dow!==6).length;
-  if(open.length>left&&heavy<=left)h+=`<div class="banner info">${open.length} sessions left in ${left} day${left===1?"":"s"}. Rowing sessions can be added after a home session to fit them in.</div>`;
-  else if(heavy>left)h+=`<div class="banner warn">${open.length} sessions left in ${left} day${left===1?"":"s"}. Prioritise Gym A and Gym B; skip the rest without guilt.</div>`;
+function gapHtml(c,fill){return esc(c.a).replace(/\[(.+?)\]/g,(m,p)=>'<span class="gap">'+(fill?p:"&nbsp;")+'</span>')+(c.inf?' <span class="inf">('+esc(c.inf)+')</span>':'');}
+function head(c,deck){
+  const how={write:isGap(c)?"Schreib, was in die Lücke gehört.":"Schreib den ganzen Satz.",order:"Bring die Wörter in die richtige Reihenfolge. Tippe ein Wort an, um es zu setzen oder wieder zu entfernen.",choose:"Wähle die richtige Antwort."}[st.mode];
+  let h='<p class="task">'+esc(deck.task)+' '+how+'</p>';
+  if(c.q) h+='<p class="sentence">'+esc(c.q)+'</p>';
+  else if(st.mode!=="order") h+='<p class="sentence">'+gapHtml(c,false)+'</p>';
+  else if(c.inf) h+='<p class="hint">'+(deck.hint||"Verb")+': '+esc(c.inf.replace(/^= /,""))+'</p>';
   return h;
 }
-function recommend(date){
-  const wk=weekOf(date);const info=weekInfo(wk);
-  const open=info.filter(x=>x.state!=="done"&&x.state!=="partial");
-  const after=weekDates(wk).filter(d=>diffDays(date,d)>0).length;
-  const today=sessionsOn(date);
-  if(!open.length)return {dows:[],title:"Rest",why:"All of this week’s sessions are done. Rest, or take an easy 20-minute walk or row."};
-  const sorted=open.slice().sort((a,b)=>FATIGUE[a.dow]-FATIGUE[b.dow]);
-  const best=sorted[0];
-  const othersFit=open.filter(x=>x.dow!==best.dow).length<=after;
-  if(best.dow===1)return {dows:[1],title:"Zone 2 row",why:"Poor sleep lowers performance in every kind of training, but easy steady cardio depends least on peak strength and sharp technique, so a small dip matters little. It still builds fitness and burns calories."+(othersFit?"":" Your remaining sessions will need some doubling up.")};
-  if(open.length<=after)return {dows:[],title:"Rest today",why:`Your ${open.length} remaining session${open.length===1?"":"s"} still fit in the ${after} day${after===1?"":"s"} left, so recover today and train tomorrow.`};
-  const lab=best.dow===0||best.dow===3?" (lighter version)":"";
-  return {dows:[best.dow],title:best.name+lab,why:best.dow===0||best.dow===3?"Only harder sessions are left this week. After a poor night the same weights feel heavier and strength dips a little, so the app takes 10% off the working weights, drops one set and skips the heavy single. That is a coaching rule of thumb, not a tested protocol.":"It is the least demanding session left this week, so it fits a low-energy day best."};
+function after(c,deck){
+  let h='<div class="after"><p class="sentence">'+(isGap(c)?gapHtml(c,true):esc(c.a))+'</p>';
+  if(deck.kind==="zv") h+='<p>'+(/worden/.test(c.a)?"Vorgangspassiv Perfekt: Der abgeschlossene Vorgang steht im Mittelpunkt.":"Zustandspassiv Präsens: Das Ergebnis besteht jetzt.")+'</p>';
+  if(c.n&&!/^(der|die|das) \S+(, Plural| \(|$)/.test(c.n)) h+='<p>'+esc(c.n)+'</p>';
+  const ns=nounsOf(c);
+  if(ns.length) h+='<p><strong>Nomen:</strong></p><ul class="nouns">'+ns.map(x=>'<li>'+esc(x)+'</li>').join("")+'</ul>';
+  return h+'</div>';
 }
-function sleepCard(date,s){
-  const r=recommend(date);
-  const same=JSON.stringify(r.dows)===JSON.stringify(sessionsOn(date));
-  return `<div class="card"><div class="label">Low sleep</div><h3>Best choice today: ${esc(r.title)}</h3><div class="note" style="color:var(--ink)">${esc(r.why)}</div>
-    ${same?'<div class="banner good">Today’s plan already matches this.</div>':`<div class="btns"><button type="button" class="btn primary" data-act="applyrec">${r.dows.length?"Switch today to this":"Rest today"}</button></div>`}
-    ${(sessionsOn(date).includes(0)||sessionsOn(date).includes(3))?'<div class="note">If you keep today’s gym session, the lighter version is already applied below.</div>':""}
-    <div class="note"><b>Tip:</b> if you can, train earlier in the day. Research finds morning sessions are far less affected by a poor night than afternoon or evening ones.</div>
-    <div class="note">One bad night costs only a little performance, but several in a row add up. Short sleep while dieting also shifts weight loss from fat towards muscle.</div></div>`;
-}
-const EXTRA_TYPES=["Strength","Cardio","Sport","Mobility","Other"];
-function extraCard(date){
-  const L=dayLog(date,false);const list=(L&&L.extra)||[];
-  let h=`<div class="card"><div class="cardhead"><div><div class="label">Extra</div><h3>Other activity</h3></div>
-    <button type="button" class="btn small ${extraOpen?"":"primary"}" data-act="extraopen">${extraOpen?"Close":"Add"}</button></div>`;
-  if(list.length)h+=`<div class="wlist">${list.map((x,i)=>`<div class="wrow"><span><b>${esc(x.name)}</b> <span class="chip">${esc(x.type)}</span><br><span class="meta num">${[x.min?x.min+" min":"",x.sets&&x.reps?`${x.sets} × ${x.reps}${x.kg?" @ "+x.kg+" kg":""}`:"",x.km?x.km+" km":"",x.rpe?"RPE "+x.rpe:"",x.note].filter(Boolean).map(esc).join(" · ")}</span></span>
-    <button type="button" class="btn small" data-act="delextra" data-i="${i}" aria-label="Delete ${esc(x.name)}">✕</button></div>`).join("")}</div>`;
-  else if(!extraOpen)h+='<div class="note">Log anything outside the plan: a walk, football, a hike, a class or extra sets.</div>';
-  if(extraOpen)h+=`<div class="xform">
-    <div><div class="label">What did you do?</div><input class="txt" id="x-name" placeholder="e.g. 5-a-side football"></div>
-    <div class="row2"><div><div class="label">Type</div><select id="x-type">${EXTRA_TYPES.map(t=>`<option>${t}</option>`).join("")}</select></div>
-      <div><div class="label">Minutes</div><input class="txt" id="x-min" inputmode="numeric"></div></div>
-    <div class="row2"><div><div class="label">Sets</div><input class="txt" id="x-sets" inputmode="numeric"></div><div><div class="label">Reps</div><input class="txt" id="x-reps" inputmode="numeric"></div></div>
-    <div class="row2"><div><div class="label">Weight (kg)</div><input class="txt" id="x-kg" inputmode="decimal"></div><div><div class="label">Distance (km)</div><input class="txt" id="x-km" inputmode="decimal"></div></div>
-    <div class="row2"><div><div class="label">Effort (RPE 1–10)</div><input class="txt" id="x-rpe" inputmode="decimal"></div><div><div class="label">Note</div><input class="txt" id="x-note"></div></div>
-    <div class="note" id="x-msg" role="status"></div>
-    <div class="btns"><button type="button" class="btn primary" data-act="saveextra">Save activity</button></div></div>`;
-  return h+"</div>";
-}
-function itemCard(date,s,it){
-  const st=itemStatus(date,it);
-  if(it.kind==="gen"){
-    const L=itemLog(date,it,false)||{d:false};
-    return `<div class="card warmcard ${L.d?"done":""}"><div class="cardhead"><div><div class="label">Warm-up</div><h3>${esc(it.name)}</h3><div class="meta">${esc(it.plan)}</div></div>
-      <button type="button" class="tick ${L.d?"on":""}" style="width:52px;flex:none" data-act="cdone" data-item="${it.id}" aria-label="General warm-up done">✓</button></div></div>`;
-  }
-  if(it.kind==="warm"){
-    const L=itemLog(date,it,false);
-    const rows=it.warm.map((x,i)=>{const d=L&&L.sets[i]&&L.sets[i].d;
-      return `<div class="wrow"><span class="num"><b>${x.bar?"Bar":kg(x.w)+" kg"}</b>${x.bar?` <span class="meta">(${kg(x.w)} kg)</span>`:""} × ${x.r}</span>
-      <button type="button" class="tick small ${d?"on":""}" data-act="tick" data-item="${it.id}" data-i="${i}" aria-label="Warm-up set ${i+1} done">✓</button></div>`;}).join("");
-    return `<div class="card warmcard ${st===2?"done":""}"><div class="label">Warm-up</div><h3>${esc(it.name)}</h3><div class="wlist">${rows}</div><div class="note">${esc(it.note)}</div></div>`;
-  }
-  if(it.kind==="row"||it.kind==="fin"){
-    const L=itemLog(date,it,false)||{f:{},d:false};const f=L.f||{};
-    const fields=it.kind==="row"?[["dist","Distance","m"],["time","Time","mm:ss"],["watts","Avg watts","W"],["hr","Avg HR","bpm"]]:[["rounds","Rounds done",""],["time","Total time","mm:ss"]];
-    return `<div class="card ${st===2?"done":""}"><div class="cardhead"><div><div class="label">Cardio</div><h3>${esc(it.name)}</h3><div class="meta">${esc(it.plan)}</div></div></div>
-      <div class="row2">${fields.map(([k,lab,u])=>`<div><div class="label">${lab}</div><label class="field"><input id="${it.id}-${k}" inputmode="${k==="time"?"text":"decimal"}" data-act="f" data-item="${it.id}" data-f="${k}" value="${esc(f[k]??"")}" placeholder="${k==="rounds"?it.rounds:""}"><span>${u}</span></label></div>`).join("")}</div>
-      <div class="btns"><button type="button" class="btn ${L.d?"primary":""}" data-act="cdone" data-item="${it.id}">${L.d?"✓ Done":"Mark done"}</button></div></div>`;
-  }
-  const L=itemLog(date,it,false);
-  const sets=Array.from({length:it.sets},(_,i)=>L&&L.sets[i]?L.sets[i]:{w:null,r:null,d:false});
-  const wShow=it.kind==="home"?"":(it.bw?"BW":kg(it.weight)+" kg");
-  const pct=it.pct?` · ${Math.round(it.pct*1000)/10}%`:"";
-  let rows=sets.map((x,i)=>{
-    const wv=x.w!=null?x.w:(it.kind==="home"||it.bw?"":it.weight);
-    return `<div class="setrow"><span class="n">${i+1}</span>
-      <label class="field"><input id="${it.id}-w${i}" inputmode="decimal" aria-label="Set ${i+1} weight" data-act="w" data-item="${it.id}" data-i="${i}" value="${esc(wv)}" placeholder="${it.kind==="home"||it.bw?"kg":""}"><span>kg</span></label>
-      <span class="x">×</span>
-      <label class="field"><input id="${it.id}-r${i}" inputmode="numeric" aria-label="Set ${i+1} reps" data-act="r" data-item="${it.id}" data-i="${i}" value="${esc(x.r??"")}" placeholder="${esc(it.reps)}"><span>reps</span></label>
-      <button type="button" class="tick ${x.d?"on":""}" data-act="tick" data-item="${it.id}" data-i="${i}" aria-label="Set ${i+1} done">✓</button></div>`;
-  }).join("");
-  let extra="";
-  if(it.kind==="lift"||it.kind==="acc"){
-    const rpe=L?L.rpe:"";
-    extra=`<div class="row2"><div><div class="label">Effort (RPE)</div><select id="${it.id}-rpe" data-act="rpe" data-item="${it.id}"><option value="">–</option>${["6","7","7.5","8","8.5","9","9.5","10"].map(v=>`<option ${rpe===v?"selected":""}>${v}</option>`).join("")}</select></div>
-      <div><div class="label">Note</div><input class="txt" id="${it.id}-note" data-act="note" data-item="${it.id}" value="${esc(L?L.note:"")}"></div></div>`;
-  }
-  let sug="";
-  if(it.progress&&L){
-    const top=hi(it.reps);const all=L.sets.slice(0,it.sets).every(x=>x.d&&Number(x.r)>=top);
-    const already=S.adj.some(a=>a.k===it.k&&a.from===s.wk+1);
-    if(already)sug=`<div class="banner good">+${kg(S.step)} kg added from week ${s.wk+1}. <button type="button" class="btn small" data-act="unbump" data-k="${it.k}" data-wk="${s.wk+1}">Undo</button></div>`;
-    else if(all&&s.wk<12)sug=`<div class="banner good">Every set hit ${top} reps. <button type="button" class="btn small primary" data-act="bump" data-k="${it.k}" data-wk="${s.wk+1}">Add ${kg(S.step)} kg from week ${s.wk+1}</button></div>`;
-  }
-  return `<div class="card ${st===2?"done":""}"><div class="cardhead"><div><div class="label">${esc(it.label)}</div><h3>${esc(it.name)}</h3><div class="meta num">${it.sets} × ${esc(it.reps)}${pct}</div></div>${wShow?`<div class="big num">${esc(wShow)}</div>`:""}</div>
-    ${it.note?`<div class="note">${esc(it.note)}</div>`:""}
-    <div class="sets">${rows}</div>${extra}${sug}</div>`;
-}
-function bodyCard(s){
-  const b=(dayLog(viewDate,false)||{body:{}}).body||{};
-  let wkinfo="";
-  if(s){
-    const avg=weekAvg(s.wk);
-    wkinfo=`<div class="note num">Week ${s.wk} average: ${avg!=null?kg(avg)+" kg":"no entries yet"} · target by Sunday ${kg(targetFor(s.wk))} kg</div>`;
-  }
-  const sunday=s&&s.realDow===6;
-  return `<div class="card"><div class="label">Body</div><h3>${sunday?"Weekly check-in":"Morning weigh-in"}</h3>
-    <div class="row2"><div><div class="label">Weight</div><label class="field"><input id="bw" inputmode="decimal" data-act="body" data-f="w" value="${esc(b.w??"")}"><span>kg</span></label></div>
-    ${sunday?`<div><div class="label">Waist at navel</div><label class="field"><input id="waist" inputmode="decimal" data-act="body" data-f="waist" value="${esc(b.waist??"")}"><span>cm</span></label></div>`:`<div><div class="label">Calories eaten</div><label class="field"><input id="kcal" inputmode="numeric" data-act="body" data-f="kcal" value="${esc(b.kcal??"")}"><span>kcal</span></label></div>`}</div>
-    ${wkinfo}</div>`;
-}
-function weekAvg(wk){
-  const vals=[];for(let i=0;i<7;i++){const d=addDays(S.start,(wk-1)*7+i);const L=S.logs[d];if(L&&L.body&&L.body.w)vals.push(Number(L.body.w));}
-  return vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:null;
+function solved(idx){doneSet().add(idx);score();save();}
+function score(){const deck=curDeck();$("score").textContent="Gelöst: "+[...doneSet()].filter(i=>list(deck).includes(i)).length+" von "+list(deck).length;}
+
+function render(){
+  const deck=curDeck(), l=list(deck);
+  let pos=Math.min(st.pos[deck.id]||0,l.length-1); st.pos[deck.id]=pos;
+  const idx=l[pos], c=deck.cards[idx];
+  ["v","g"].forEach(a=>$("area-"+a).setAttribute("aria-selected",st.area===a));
+  ["write","order","choose"].forEach(m=>$("mode-"+m).setAttribute("aria-selected",st.mode===m));
+  $("deck").innerHTML=DECKS.filter(d=>d.area===st.area).map(d=>'<option value="'+d.id+'"'+(d.id===deck.id?" selected":"")+'>'+esc(d.title)+' ('+d.cards.length+')</option>').join("");
+  $("progress").textContent="Karte "+(pos+1)+" von "+l.length;
+  $("prev").disabled=pos===0; $("next").disabled=pos===l.length-1;
+  $("src").textContent="Quelle: "+deck.src+(deck.own?". Die Lösungen stammen von Claude, nicht aus einem offiziellen Schlüssel.":".");
+  score(); save();
+  ({write:renderWrite,order:renderOrder,choose:renderChoose})[st.mode](c,deck,idx);
 }
 
-/* ---------------- Week ---------------- */
-let weekView=null;
-function renderWeek(){
-  const cur=sessionFor(viewDate)||sessionFor(TODAY);
-  if(weekView==null)weekView=cur?cur.wk:1;
-  const W=WEEKS[weekView-1];
-  $("#top").innerHTML=`<div class="inner"><div class="daterow"><button class="iconbtn" type="button" data-act="wk" data-n="-1" aria-label="Previous week">‹</button>
-    <h1>Week ${weekView}</h1><button class="iconbtn" type="button" data-act="wk" data-n="1" aria-label="Next week">›</button></div>
-    <div class="sub"><span class="chip accent">${esc(W.ph)}</span><span class="chip">${fmt(addDays(S.start,(weekView-1)*7))} – ${fmt(addDays(S.start,(weekView-1)*7+6))}</span></div></div>`;
-  const info=weekInfo(weekView);const doneN=info.filter(x=>x.state==="done").length;
-  const future=weekDates(weekView)[6]&&diffDays(TODAY,weekDates(weekView)[6])>=0;
-  let h=`<div class="card"><div class="cardhead"><div><div class="label">This week’s sessions</div><h3>${doneN} of ${info.length} done</h3></div></div>
-    <div class="wlist">${info.map(x=>`<div class="planrow"><span>${esc(x.name)}</span>${stateChip(x)}</div>`).join("")}</div>
-    ${future?`<div class="btns"><button type="button" class="btn small" data-act="resched" data-wk="${weekView}">Reschedule rest of week</button></div><div class="note">Moves open sessions onto the days you have left, keeping gym days apart where possible.</div>`:""}</div>`;
-  h+='<div class="daylist" style="margin-top:12px">';
-  for(let i=0;i<7;i++){
-    const d=addDays(S.start,(weekView-1)*7+i);const s=sessionFor(d);
-    h+=`<button type="button" class="dayitem ${d===TODAY?"today":""}" data-act="open" data-d="${d}">
-      <span class="d">${DOW[i]}<small>${fmt(d)}</small></span>
-      <span><b>${esc(s.title)}</b>${s.swapped?' <span class="chip">swapped</span>':""}<br><span class="meta num">${s.kcal.toLocaleString("en-GB")} kcal${s.holiday?" · holiday":""}</span></span>
-      ${statusChip(dayStatus(d))}</button>`;
-  }
-  h+="</div>";
-  const lifts=[["squat","Squat"],["bench","Bench"],["deadlift","Deadlift"]];
-  const sA={items:buildDow(0,weekView)},sB={items:buildDow(3,weekView)};
-  const find=(sess,id)=>sess&&sess.items.find(x=>x.id===id);
-  h+=`<div class="card" style="margin-top:12px"><div class="label">Main lifts this week</div><table class="mx"><thead><tr><th>Lift</th><th>Single</th><th>Back-off</th></tr></thead><tbody>`;
-  lifts.forEach(([k,n])=>{
-    const src=k==="deadlift"?sB:sA;
-    const single=find(src,k+"-single")||find(src,k+"-test");const bo=find(src,k+"-backoff");
-    h+=`<tr><td>${n}</td><td class="num">${single?(single.label==="1RM test"?"1RM test":`${kg(single.weight)} × ${single.sets}`):"–"}</td><td class="num">${bo?`${bo.sets} × ${esc(bo.reps)} @ ${kg(bo.weight)}`:"–"}</td></tr>`;
-  });
-  h+="</tbody></table></div>";
-  $("#view").innerHTML=`<div class="stack">${h}</div>`;
+function renderWrite(c,deck,idx){
+  const cands=[expected(c)].concat(c.alt||[]);
+  let state="",msg="",show=false,val="";
+  const draw=()=>{
+    $("card").innerHTML=head(c,deck)+
+      '<form id="f" class="actions"><input id="answer" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Deine Antwort" value="'+esc(val)+'"'+(state==="ok"?" disabled":"")+'>'+
+      '<button class="primary" type="submit"'+(state==="ok"?" disabled":"")+'>Prüfen</button><button type="button" id="reveal">Lösung zeigen</button></form>'+
+      '<p class="fb '+state+'" aria-live="polite">'+msg+'</p>'+
+      (show||state==="ok"?after(c,deck):'')+
+      (deck.kind==="vocab"?'<details><summary>Wortliste zeigen</summary><p>'+(deck.bank||[...new Set(deck.cards.map(x=>parts(x)[0].toLowerCase()))].sort((a,b)=>a.localeCompare(b,"de"))).map(esc).join(" · ")+'</p></details>':'')+
+      (isGap(c)?'':'<p class="hint">Verglichen wird mit der Lösung. Eine andere Wortstellung kann auch richtig sein. ae, oe, ue und ss gelten als ä, ö, ü und ß.</p>');
+    $("f").onsubmit=e=>{
+      e.preventDefault(); val=$("answer").value;
+      if(!val.trim()) return;
+      const hit=cands.find(x=>norm(x)===norm(val));
+      if(hit){state="ok";msg="Richtig."+(cands.some(x=>strip(x)===strip(val))?"":" Achte auf Großschreibung und Umlaute.");solved(idx);}
+      else{state="no";msg="Noch nicht richtig. Versuch es noch einmal oder zeig die Lösung.";}
+      draw();
+    };
+    $("reveal").onclick=()=>{val=$("answer").value;show=true;draw();};
+    if(state!=="ok"&&(state||show)) $("answer").focus();
+  };
+  draw();
 }
 
-/* ---------------- Progress ---------------- */
-function renderProgress(){
-  $("#top").innerHTML=`<div class="inner"><h1 style="text-align:center">Progress</h1><div class="sub"><span class="chip">${fmt(S.start)} – ${fmt(addDays(S.start,83))}</span></div></div>`;
-  const curWk=Math.min(12,Math.max(1,Math.floor(diffDays(S.start,TODAY)/7)+1));
-  let done=0,due=0,metres=0;
-  for(let i=0;i<84;i++){const d=addDays(S.start,i);if(diffDays(d,TODAY)<0)break;const st=dayStatus(d);if(st!=="rest"){due++;if(st==="done")done++;}}
-  Object.values(S.logs).forEach(L=>{Object.entries(L.items||{}).forEach(([k,v])=>{if(k.startsWith("row-")&&v.f&&v.f.dist)metres+=Number(v.f.dist)||0;});});
-  const avg=weekAvg(curWk);
-  let h=`<div class="tiles">
-    <div class="tile"><div class="v num">${done}/${due}</div><div class="k">Sessions done so far</div></div>
-    <div class="tile"><div class="v num">${avg!=null?kg(avg):"–"}</div><div class="k">Week ${curWk} avg kg · target ${kg(targetFor(curWk))}</div></div>
-    <div class="tile"><div class="v num">${metres?(metres/1000).toLocaleString("en-GB",{maximumFractionDigits:1}):"0"}</div><div class="k">Rowing km logged</div></div></div>`;
-  h+=`<div class="card"><h3>Body weight</h3>${weightChart()}<div class="legend"><span><i style="background:var(--muted)"></i>Target</span><span><i style="background:var(--accent)"></i>Weekly average</span><span><i style="background:var(--accent);opacity:.35;height:8px;width:8px;border-radius:50%"></i>Daily</span></div></div>`;
-  h+=`<div class="card"><h3>Heavy singles</h3>${singlesChart()}<div class="legend"><span><i style="background:var(--accent)"></i>Squat</span><span><i style="background:var(--good)"></i>Bench</span><span><i style="background:var(--warn)"></i>Deadlift</span></div></div>`;
-  $("#view").innerHTML=`<div class="stack">${h}</div>`;
-}
-function chartFrame(xs,ys,yMin,yMax,body,yFmt){
-  const Wd=340,Ht=200,L=36,R=10,T=10,B=24;
-  const X=v=>L+(v/84)*(Wd-L-R),Y=v=>T+(1-(v-yMin)/(yMax-yMin))*(Ht-T-B);
-  let g="";
-  const step=(yMax-yMin)>12?4:(yMax-yMin)>6?2:1;
-  for(let v=Math.ceil(yMin/step)*step;v<=yMax;v+=step){g+=`<line x1="${L}" x2="${Wd-R}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line)"/><text x="${L-6}" y="${Y(v)+4}" text-anchor="end">${yFmt?yFmt(v):v}</text>`;}
-  [0,4,8,12].forEach(w=>{g+=`<text x="${X(w*7)}" y="${Ht-6}" text-anchor="middle">${w===0?"Start":"Wk "+w}</text>`;});
-  return `<svg viewBox="0 0 ${Wd} ${Ht}" width="100%" role="img" aria-label="chart">${g}${body(X,Y)}</svg>`;
-}
-function weightChart(){
-  const pts=[];for(let i=0;i<84;i++){const d=addDays(S.start,i);const L=S.logs[d];if(L&&L.body&&L.body.w)pts.push([i,Number(L.body.w)]);}
-  const tgt=[[0,Number(S.startWeight)]];for(let w=1;w<=12;w++)tgt.push([w*7,targetFor(w)]);
-  const avgs=[];for(let w=1;w<=12;w++){const a=weekAvg(w);if(a!=null)avgs.push([w*7-1,a]);}
-  const all=[...tgt.map(p=>p[1]),...pts.map(p=>p[1])];
-  const yMin=Math.floor(Math.min(...all)-1),yMax=Math.ceil(Math.max(...all)+1);
-  const out=chartFrame(null,null,yMin,yMax,(X,Y)=>{
-    let b=`<polyline fill="none" stroke="var(--muted)" stroke-width="2" stroke-dasharray="5 4" points="${tgt.map(p=>X(p[0])+","+Y(p[1])).join(" ")}"/>`;
-    b+=pts.map(p=>`<circle cx="${X(p[0])}" cy="${Y(p[1])}" r="3" fill="var(--accent)" opacity=".35"/>`).join("");
-    if(avgs.length>1)b+=`<polyline fill="none" stroke="var(--accent)" stroke-width="2.5" points="${avgs.map(p=>X(p[0])+","+Y(p[1])).join(" ")}"/>`;
-    b+=avgs.map((p,i)=>`<circle cx="${X(p[0])}" cy="${Y(p[1])}" r="${i===avgs.length-1?5:3.5}" fill="var(--accent)"/>`).join("");
-    return b;
-  });
-  return out+(pts.length?"":'<div class="note">Log a morning weight on Today to start the line.</div>');
-}
-function singlesChart(){
-  const ser={squat:[],bench:[],deadlift:[]};
-  Object.keys(S.logs).sort().forEach(d=>{
-    const i=diffDays(S.start,d);if(i<0||i>=84)return;
-    Object.entries(S.logs[d].items||{}).forEach(([k,v])=>{
-      const m=k.match(/^(squat|bench|deadlift)-(single|test)$/);if(!m||!v.sets)return;
-      const ws=v.sets.filter(x=>x.d&&x.w!=null).map(x=>Number(x.w));if(ws.length)ser[m[1]].push([i,Math.max(...ws)]);
+function renderOrder(c,deck,idx){
+  const target=orderTokens(c);
+  let pool=shuffled(target.map((t,i)=>({t,i})));
+  if(pool.length>1&&pool.every((p,k)=>p.i===k)) pool.reverse();
+  let line=[],state="",show=false;
+  const draw=()=>{
+    const chip=(p,w)=>'<button class="word" data-w="'+w+'" data-i="'+p.i+'"'+(state==="ok"?" disabled":"")+'>'+esc(p.t)+'</button>';
+    $("card").innerHTML=head(c,deck)+
+      '<div class="line '+state+'">'+(line.length?line.map(p=>chip(p,"line")).join(""):'<span class="hint">Dein Satz entsteht hier.</span>')+'</div>'+
+      '<div class="words">'+pool.map(p=>chip(p,"pool")).join("")+'</div>'+
+      '<p class="fb '+state+'" aria-live="polite">'+(state==="ok"?"Richtig.":state==="no"?"Noch nicht richtig. Stell die Wörter um.":"")+'</p>'+
+      (show||state==="ok"?after(c,deck):'')+
+      '<div class="actions"><button id="check" class="primary"'+(pool.length||state==="ok"?" disabled":"")+'>Prüfen</button><button id="clear"'+(state==="ok"?" disabled":"")+'>Leeren</button><button id="reveal">Lösung zeigen</button></div>';
+    $("card").querySelectorAll(".word").forEach(b=>b.onclick=()=>{
+      const from=b.dataset.w==="pool"?pool:line, to=b.dataset.w==="pool"?line:pool;
+      to.push(from.splice(from.findIndex(p=>p.i===+b.dataset.i),1)[0]); state=""; draw();
     });
-  });
-  const vals=[].concat(...Object.values(ser).map(a=>a.map(p=>p[1])));
-  if(!vals.length)return '<div class="note">Your heavy singles appear here once you tick them off on gym days. Week 1 plan: squat '+kg(rnd(maxFor("squat",1)*.85))+' kg, bench '+kg(rnd(maxFor("bench",1)*.85))+' kg, deadlift '+kg(rnd(maxFor("deadlift",1)*.85))+' kg.</div>';
-  const yMin=Math.floor((Math.min(...vals)-5)/10)*10,yMax=Math.ceil((Math.max(...vals)+5)/10)*10;
-  const col={squat:"var(--accent)",bench:"var(--good)",deadlift:"var(--warn)"};
-  return chartFrame(null,null,yMin,yMax,(X,Y)=>Object.entries(ser).map(([k,a])=>
-    (a.length>1?`<polyline fill="none" stroke="${col[k]}" stroke-width="2.5" points="${a.map(p=>X(p[0])+","+Y(p[1])).join(" ")}"/>`:"")+
-    a.map((p,i)=>`<circle cx="${X(p[0])}" cy="${Y(p[1])}" r="${i===a.length-1?5:3.5}" fill="${col[k]}"/>`).join("")).join(""));
+    $("check").onclick=()=>{
+      const got=line.map(p=>p.t).join(" ");
+      const ok=got===target.join(" ")||(c.q&&(c.alt||[]).some(x=>x===got));
+      state=ok?"ok":"no"; if(ok) solved(idx); draw();
+    };
+    $("clear").onclick=()=>{pool=pool.concat(line);line=[];state="";draw();};
+    $("reveal").onclick=()=>{show=true;draw();};
+  };
+  draw();
 }
 
-/* ---------------- Setup ---------------- */
-let resetArmed=false;
-function renderSetup(){
-  $("#top").innerHTML='<div class="inner"><h1 style="text-align:center">Setup</h1><div class="sub"><span class="chip good">Data stays on this device</span></div></div>';
-  let h=`<div class="card"><h3>Privacy</h3><div class="note" style="color:var(--ink)">Everything you log is saved only in this browser on this phone. The app makes no network requests with your data, and nothing is sent to Claude or any server. The flip side: clearing your browser data, or opening the app in a different browser or device, starts empty. Copy a backup regularly.</div>
-    <div class="note">Last backup: ${S.lastBackup?fmt(S.lastBackup,true):"never"}${storageOK?"":" · storage is blocked in this browser"}</div></div>`;
-  h+=`<div class="card"><h3>Maxes</h3><div class="note">Weeks 1–9 use the estimate. Enter your week 9 test results under “Tested” and weeks 10–12 recalculate.</div>
-    <table class="mx"><thead><tr><th>Lift</th><th>Estimate (kg)</th><th>Tested (kg)</th></tr></thead><tbody>
-    ${Object.keys(LIFTS).map(k=>`<tr><td>${LIFTS[k]}</td><td><input id="mx-${k}" inputmode="decimal" data-act="max" data-k="${k}" data-f="est" value="${esc(S.maxes[k].est)}"></td><td><input id="mt-${k}" inputmode="decimal" data-act="max" data-k="${k}" data-f="tested" value="${esc(S.maxes[k].tested??"")}" placeholder="–"></td></tr>`).join("")}
-    </tbody></table></div>`;
-  h+=`<div class="card"><h3>Accessory starting weights</h3><table class="mx"><tbody>${ACC.map(a=>`<tr><td>${a.name}</td><td style="width:110px"><input id="acc-${a.k}" inputmode="decimal" data-act="acc" data-k="${a.k}" value="${esc(S.acc[a.k])}"></td></tr>`).join("")}</tbody></table><div class="note">0 = bodyweight.</div></div>`;
-  h+=`<div class="card"><h3>Plan settings</h3><table class="mx"><tbody>
-    <tr><td>Start date (a Monday)</td><td><input id="set-start" type="date" data-act="set" data-f="start" value="${esc(S.start)}"></td></tr>
-    <tr><td>Start weight (kg)</td><td><input id="set-sw" inputmode="decimal" data-act="set" data-f="startWeight" value="${esc(S.startWeight)}"></td></tr>
-    <tr><td>Barbell weight (kg)</td><td><input id="set-bar" inputmode="decimal" data-act="set" data-f="bar" value="${esc(S.bar)}"></td></tr>
-    <tr><td>Smith machine bar (kg)</td><td><input id="set-smith" inputmode="decimal" data-act="set" data-f="smithBar" value="${esc(S.smithBar)}"></td></tr>
-    <tr><td>Round weights to (kg)</td><td><input id="set-step" inputmode="decimal" data-act="set" data-f="step" value="${esc(S.step)}"></td></tr>
-    <tr><td>Protein target (g)</td><td><input id="set-prot" inputmode="numeric" data-act="set" data-f="protein" value="${esc(S.protein)}"></td></tr>
-    <tr><td>Holiday-day calories</td><td><input id="set-hol" inputmode="numeric" data-act="set" data-f="holidayK" value="${esc(S.holidayK)}"></td></tr>
-    </tbody></table>
-    ${S.adj.length?`<div class="label" style="margin-top:10px">Weight increases you added</div>${S.adj.map((a,i)=>`<div class="btns" style="align-items:center"><span class="num">${esc(LIFTS[a.k]||(ACC.find(x=>x.k===a.k)||{}).name||a.k)}: +${kg(a.kg)} kg from week ${a.from}</span><button type="button" class="btn small" data-act="deladj" data-i="${i}">Remove</button></div>`).join("")}`:""}</div>`;
-  h+=`<div class="card"><h3>Backup and export</h3>
-    <div class="note">Copy the backup and paste it into a note, email or file you keep. To restore, paste it below and tap Restore.</div>
-    <div class="btns"><button type="button" class="btn primary" data-act="copybackup">Copy backup</button>${window.self===window.top?'<button type="button" class="btn" data-act="dlbackup">Download backup file</button>':""}<button type="button" class="btn" data-act="copycsv">Copy log as CSV</button></div>
-    <div class="note" id="bkmsg" role="status"></div>
-    <textarea id="bktext" aria-label="Backup text" placeholder="Backup text appears here; paste a backup here to restore"></textarea>
-    <div class="btns"><label class="btn" for="bkfile" style="display:inline-grid;place-items:center">Choose backup file</label><input id="bkfile" type="file" accept=".json,application/json,text/plain" data-act="file" style="display:none">
-    <button type="button" class="btn" data-act="restore">Restore from text</button></div></div>`;
-  h+=`<div class="card"><h3>Reset</h3><div class="note">Deletes every entry and setting on this device.</div><div class="btns"><button type="button" class="btn danger" data-act="reset">${resetArmed?"Tap again to delete everything":"Reset all data"}</button></div></div>`;
-  $("#view").innerHTML=`<div class="stack">${h}</div>`;
-}
-function backupText(){return JSON.stringify(Object.assign({app:"cutblock",version:1,exported:new Date().toISOString()},S));}
-function csv(){
-  const rows=[["date","week","session","exercise","set","weight_kg","reps","done","rpe","note","distance_m","time","watts","hr","body_weight_kg","waist_cm","kcal"]];
-  Object.keys(S.logs).sort().forEach(d=>{
-    const s=sessionFor(d);const L=S.logs[d];const wk=s?s.wk:"";const title=s?s.title:"";
-    const names={};if(s)s.items.forEach(it=>names[it.id]=it.name);
-    Object.entries(L.items||{}).forEach(([id,v])=>{
-      if(v.sets)v.sets.forEach((x,i)=>{if(x.w!=null||x.r!=null||x.d)rows.push([d,wk,title,names[id]||id,i+1,x.w??"",x.r??"",x.d?"yes":"no",v.rpe||"",v.note||"","","","","","","",""]);});
-      else if(v.f)rows.push([d,wk,title,names[id]||id,"","","",v.d?"yes":"no","","",v.f.dist??"",v.f.time??"",v.f.watts??"",v.f.hr??"","","",""]);
+function renderChoose(c,deck,idx){
+  const o=options(c,deck), ok=[o[0]].concat(deck.kind==="vocab"?(c.alt||[]):[]), sh=shuffled([...new Set(o)]);
+  const wrong=new Set(); let hit=null;
+  const draw=()=>{
+    $("card").innerHTML=head(c,deck)+
+      '<div class="opts">'+sh.map((w,i)=>'<button class="word'+(hit===w?" ok":wrong.has(w)?" no":"")+'" data-i="'+i+'"'+(hit||wrong.has(w)?" disabled":"")+'>'+esc(w)+'</button>').join("")+'</div>'+
+      '<p class="fb '+(hit?"ok":wrong.size?"no":"")+'" aria-live="polite">'+(hit?"Richtig.":wrong.size?"Das stimmt nicht. Versuch eine andere Antwort.":"")+'</p>'+
+      (hit?after(c,deck):'');
+    $("card").querySelectorAll(".word").forEach(b=>b.onclick=()=>{
+      const w=sh[+b.dataset.i];
+      if(ok.includes(w)){hit=w;solved(idx);} else wrong.add(w);
+      draw();
     });
-    (L.extra||[]).forEach(x=>rows.push([d,wk,title,"Other: "+x.name+" ("+x.type+")",x.sets||"",x.kg||"",x.reps||"","yes",x.rpe||"",[x.min?x.min+" min":"",x.note].filter(Boolean).join(" · "),x.km?Number(x.km)*1000:"","","","","","",""]));
-    if(L.body&&(L.body.w||L.body.waist||L.body.kcal))rows.push([d,wk,title,"Body","","","","","","","","","","",L.body.w??"",L.body.waist??"",L.body.kcal??""]);
-  });
-  return rows.map(r=>r.map(c=>{c=String(c);return /[",\n]/.test(c)?'"'+c.replace(/"/g,'""')+'"':c;}).join(",")).join("\n");
-}
-async function copyText(t,msg){
-  const ta=$("#bktext");if(ta)ta.value=t;
-  try{await navigator.clipboard.writeText(t);setMsg(msg+" copied to the clipboard.");return true;}
-  catch(e){if(ta){ta.focus();ta.select();}setMsg("Copying was blocked here. The text is selected in the box below: copy it by hand.");return false;}
-}
-function alertBanner(t){const v=$("#view");if(!v)return;const d=document.createElement("div");d.className="banner warn";d.setAttribute("role","status");d.textContent=t;v.prepend(d);}
-function setMsg(t){const m=$("#bkmsg");if(m)m.textContent=t;}
-function restore(text){
-  try{const p=JSON.parse(text);if(!p||typeof p!=="object"||!p.logs)throw 0;
-    const d=defaults();S=Object.assign(d,p);S.maxes=Object.assign(d.maxes,p.maxes||{});S.acc=Object.assign(d.acc,p.acc||{});delete S.app;delete S.version;delete S.exported;
-    save();setMsg("Backup restored.");setTimeout(render,600);
-  }catch(e){setMsg("That text isn’t a backup from this app. Paste the whole backup, starting with {.");}
+  };
+  draw();
 }
 
-/* ---------------- Rest timer ---------------- */
-let tEnd=0,tInt=null;
-function startTimer(sec){tEnd=Date.now()+sec*1000;$("#timer").classList.add("show");tick();clearInterval(tInt);tInt=setInterval(tick,250);}
-function tick(){
-  const left=Math.max(0,Math.round((tEnd-Date.now())/1000));
-  $("#timerT").textContent=left>0?`${Math.floor(left/60)}:${String(left%60).padStart(2,"0")}`:"Go";
-  if(left<=0){clearInterval(tInt);try{navigator.vibrate&&navigator.vibrate([200,100,200]);}catch(e){}setTimeout(()=>{if(Date.now()>=tEnd)$("#timer").classList.remove("show");},4000);}
-}
-$("#tPlus").addEventListener("click",()=>{tEnd=Math.max(tEnd,Date.now())+30000;clearInterval(tInt);tInt=setInterval(tick,250);tick();});
-$("#tSkip").addEventListener("click",()=>{clearInterval(tInt);$("#timer").classList.remove("show");});
-
-/* ---------------- Events ---------------- */
-function findItem(id){const s=sessionFor(viewDate);return s&&s.items.find(x=>x.id===id);}
-document.addEventListener("click",async e=>{
-  const b=e.target.closest("[data-act]");if(!b)return;const a=b.dataset.act;
-  if(a==="day"){viewDate=addDays(viewDate,Number(b.dataset.n));window.scrollTo(0,0);render();}
-  else if(a==="gotoday"){viewDate=TODAY;render();}
-  else if(a==="wk"){weekView=Math.min(12,Math.max(1,weekView+Number(b.dataset.n)));render();}
-  else if(a==="open"){viewDate=b.dataset.d;location.hash="today";render();window.scrollTo(0,0);}
-  else if(a==="tick"){
-    const it=findItem(b.dataset.item);if(!it)return;const L=itemLog(viewDate,it,true);const x=L.sets[Number(b.dataset.i)];
-    x.d=!x.d;
-    if(x.d&&it.kind==="warm"){const ws=it.warm[Number(b.dataset.i)];x.w=ws.w;x.r=ws.r;}
-    else if(x.d){if(x.w==null&&it.kind!=="home"&&!it.bw)x.w=it.weight;if(x.r==null||x.r==="")x.r=lo(it.reps);startTimer(it.rest||120);}
-    save();const y=window.scrollY;render();window.scrollTo(0,y);
-  }
-  else if(a==="cdone"){const it=findItem(b.dataset.item);const L=itemLog(viewDate,it,true);L.d=!L.d;save();const y=window.scrollY;render();window.scrollTo(0,y);}
-  else if(a==="bump"){S.adj.push({k:b.dataset.k,from:Number(b.dataset.wk),kg:Number(S.step)});save();const y=window.scrollY;render();window.scrollTo(0,y);}
-  else if(a==="unbump"){const i=S.adj.findIndex(x=>x.k===b.dataset.k&&x.from===Number(b.dataset.wk));if(i>=0)S.adj.splice(i,1);save();const y=window.scrollY;render();window.scrollTo(0,y);}
-  else if(a==="deladj"){S.adj.splice(Number(b.dataset.i),1);save();render();}
-  else if(a==="copybackup"){if(await copyText(backupText(),"Backup")){S.lastBackup=TODAY;save();}else{S.lastBackup=TODAY;save();}}
-  else if(a==="dlbackup"){
-    try{const blob=new Blob([backupText()],{type:"application/json"});const u=URL.createObjectURL(blob);const l=document.createElement("a");l.href=u;l.download=`training-backup-${TODAY}.json`;document.body.appendChild(l);l.click();l.remove();setTimeout(()=>URL.revokeObjectURL(u),2000);S.lastBackup=TODAY;save();setMsg("If no file appeared, this viewer blocks downloads: use Copy backup instead.");}
-    catch(err){setMsg("Downloads are blocked here: use Copy backup instead.");}
-  }
-  else if(a==="copycsv"){await copyText(csv(),"CSV");}
-  else if(a==="restore"){restore($("#bktext").value.trim());}
-  else if(a==="planopen"){planOpen=!planOpen;render();}
-  else if(a==="sleep"){S.sleep=S.sleep||{};if(lowSleep(viewDate))delete S.sleep[viewDate];else S.sleep[viewDate]={poor:true};save();render();}
-  else if(a==="assign"){const wk=weekOf(viewDate),dw=Number(b.dataset.dow);removeEverywhere(wk,dw,viewDate);const cur=sessionsOn(viewDate);if(!cur.includes(dw))cur.push(dw);setDay(viewDate,cur);save();render();}
-  else if(a==="unassign"){const dw=Number(b.dataset.dow);setDay(viewDate,sessionsOn(viewDate).filter(x=>x!==dw));save();render();}
-  else if(a==="restday"){const wk=weekOf(viewDate);setDay(viewDate,[]);reschedule(wk,addDays(viewDate,1),false);save();render();}
-  else if(a==="resched"){const wk=b.dataset.wk?Number(b.dataset.wk):(weekOf(viewDate)||weekView);const st=weekDates(wk)[0];const from=diffDays(TODAY,st)>0?st:TODAY;const r=reschedule(wk,from,true);save();render();
-    if(r.left.length){setTimeout(()=>alertBanner(`Couldn’t fit ${r.left.map(x=>SHORT[x]).join(", ")} this week. Skip ${r.left.length>1?"them":"it"}, or add ${r.left.length>1?"them":"it"} to a day under “Change today’s plan”.`),50);}}
-  else if(a==="resetweek"){const wk=weekOf(viewDate);weekDates(wk).forEach(d=>delete S.swaps[d]);save();render();}
-  else if(a==="applyrec"){const wk=weekOf(viewDate);const r=recommend(viewDate);r.dows.forEach(dw=>removeEverywhere(wk,dw,viewDate));setDay(viewDate,r.dows);reschedule(wk,addDays(viewDate,1),false);save();render();}
-  else if(a==="extraopen"){extraOpen=!extraOpen;render();if(extraOpen){const n=$("#x-name");if(n)n.focus();}}
-  else if(a==="saveextra"){
-    const g=id=>{const el=$("#"+id);return el?el.value.trim():"";};
-    const name=g("x-name");if(!name){$("#x-msg").textContent="Give the activity a name first.";return;}
-    const L=dayLog(viewDate,true);L.extra=L.extra||[];
-    L.extra.push({name,type:g("x-type"),min:g("x-min"),sets:g("x-sets"),reps:g("x-reps"),kg:g("x-kg"),km:g("x-km"),rpe:g("x-rpe"),note:g("x-note")});
-    extraOpen=false;save();render();
-  }
-  else if(a==="delextra"){const L=dayLog(viewDate,false);if(L&&L.extra){L.extra.splice(Number(b.dataset.i),1);save();render();}}
-  else if(a==="reset"){if(!resetArmed){resetArmed=true;render();setTimeout(()=>{resetArmed=false;if(route()==="setup")render();},5000);}else{resetArmed=false;S=defaults();save();render();}}
-});
-document.addEventListener("input",e=>{
-  const t=e.target;const a=t.dataset&&t.dataset.act;if(!a)return;
-  const v=t.value.trim();
-  if(a==="w"||a==="r"){const it=findItem(t.dataset.item);if(!it)return;const L=itemLog(viewDate,it,true);const x=L.sets[Number(t.dataset.i)];
-    const n=v===""?null:Number(v.replace(",","."));x[a]=(n===null||isNaN(n))?(v===""?null:v):n;save();}
-  else if(a==="note"){const it=findItem(t.dataset.item);const L=itemLog(viewDate,it,true);L.note=t.value;save();}
-  else if(a==="f"){const it=findItem(t.dataset.item);const L=itemLog(viewDate,it,true);L.f=L.f||{};L.f[t.dataset.f]=v;save();}
-  else if(a==="body"){const L=dayLog(viewDate,true);L.body=L.body||{};L.body[t.dataset.f]=v===""?null:Number(v.replace(",","."));save();}
-  else if(a==="max"){const n=v===""?null:Number(v.replace(",","."));if(t.dataset.f==="est"&&(n==null||isNaN(n)))return;S.maxes[t.dataset.k][t.dataset.f]=isNaN(n)?null:n;save();}
-  else if(a==="acc"){const n=Number(v.replace(",","."));if(!isNaN(n))S.acc[t.dataset.k]=n;save();}
-  else if(a==="set"){const f=t.dataset.f;if(f==="start"){if(/^\d{4}-\d{2}-\d{2}$/.test(v))S.start=v;}else{const n=Number(v.replace(",","."));if(!isNaN(n)&&n>0)S[f]=n;}save();}
-});
-document.addEventListener("change",e=>{
-  const t=e.target;const a=t.dataset&&t.dataset.act;if(!a)return;
-  if(a==="rpe"){const it=findItem(t.dataset.item);const L=itemLog(viewDate,it,true);L.rpe=t.value;save();}
-  else if(a==="swap"){if(t.value==="")delete S.swaps[viewDate];else S.swaps[viewDate]=Number(t.value);save();render();}
-  else if(a==="file"){const f=t.files&&t.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{$("#bktext").value=r.result;restore(String(r.result).trim());};r.readAsText(f);}
-});
-window.addEventListener("hashchange",render);
+["v","g"].forEach(a=>$("area-"+a).onclick=()=>{st.area=a;render();});
+["write","order","choose"].forEach(m=>$("mode-"+m).onclick=()=>{st.mode=m;render();});
+$("deck").onchange=e=>{st.deck[st.area]=e.target.value;render();};
+$("prev").onclick=()=>{const d=curDeck();if(st.pos[d.id]>0){st.pos[d.id]--;render();}};
+$("next").onclick=()=>{const d=curDeck();if(st.pos[d.id]<list(d).length-1){st.pos[d.id]++;render();}};
+$("shuffle").onclick=()=>{const d=curDeck();st.order[d.id]=shuffled(st.order[d.id]);st.pos[d.id]=0;render();};
+$("restart").onclick=()=>{const d=curDeck();st.pos[d.id]=0;doneSet().clear();render();};
 render();
-})();
+if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
 </script>
 </body>
 </html>
